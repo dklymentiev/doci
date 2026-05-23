@@ -350,7 +350,9 @@ function render_page(string $title, string $content, string $path, bool $showRec
 <script>
 var THEMES=['','mesh','light'],THEME_NAMES={'':'HQ','mesh':'Mesh','light':'Light'};
 function getTheme(){var s=localStorage.getItem('hq_theme');return s!==null?s:'mesh'}
-function applyTheme(t){document.documentElement.dataset.theme=t;var l=document.querySelector('.theme-toggle-label');if(l)l.textContent=THEME_NAMES[t]||'HQ'}
+function applyTheme(t){document.documentElement.dataset.theme=t;var l=document.querySelector('.theme-toggle-label');if(l)l.textContent=THEME_NAMES[t]||'HQ';syncIframeTheme(t)}
+function syncIframeTheme(t){document.querySelectorAll('iframe.doci-html-doc').forEach(function(f){try{f.contentWindow.postMessage({docTheme:t},'*')}catch(e){}})}
+document.addEventListener('load',function(e){if(e.target&&e.target.classList&&e.target.classList.contains('doci-html-doc')){try{e.target.contentWindow.postMessage({docTheme:getTheme()},'*')}catch(err){}}},true);
 function toggleTheme(){var c=getTheme(),n=THEMES[(THEMES.indexOf(c)+1)%THEMES.length];localStorage.setItem('hq_theme',n);applyTheme(n)}
 applyTheme(getTheme());
 </script>

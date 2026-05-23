@@ -139,12 +139,26 @@ function render_html_document(string $html): string {
     $baseUrl = htmlspecialchars($scheme . '://' . $host, ENT_QUOTES, 'UTF-8');
     $themeLink = '<link rel="stylesheet" href="' . $baseUrl . '/assets/hq-theme.css">';
 
+    // Listen for theme updates from the parent. The parent posts the active
+    // theme on iframe load and on every theme toggle so the iframe stays
+    // in sync with the surrounding DOCI chrome.
+    $themeListener = '<script>window.addEventListener("message",function(e){'
+        . 'if(e.data&&typeof e.data.docTheme==="string"){'
+        . 'document.documentElement.dataset.theme=e.data.docTheme}});</script>';
+
+    // Default <html data-theme> to "mesh" so the iframe doesn't flash the
+    // out-of-the-box HQ palette before the postMessage arrives.
+    if (preg_match('#<html(?![^>]*data-theme=)([^>]*)>#i', $html)) {
+        $html = preg_replace('#<html(?![^>]*data-theme=)([^>]*)>#i', '<html$1 data-theme="mesh">', $html, 1);
+    }
+
+    $injection = $themeLink . $themeListener;
     if (preg_match('#<head[^>]*>#i', $html)) {
-        $html = preg_replace('#(<head[^>]*>)#i', '$1' . $themeLink, $html, 1);
+        $html = preg_replace('#(<head[^>]*>)#i', '$1' . $injection, $html, 1);
     } elseif (preg_match('#<html[^>]*>#i', $html)) {
-        $html = preg_replace('#(<html[^>]*>)#i', '$1<head>' . $themeLink . '</head>', $html, 1);
+        $html = preg_replace('#(<html[^>]*>)#i', '$1<head>' . $injection . '</head>', $html, 1);
     } else {
-        $html = '<head>' . $themeLink . '</head>' . $html;
+        $html = '<head>' . $injection . '</head>' . $html;
     }
 
     $srcdoc = htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
