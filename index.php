@@ -261,8 +261,10 @@ if (is_dir($dirPath)) {
         }
     }
 
-    // Add folder search bar for non-root directories
-    $htmlContent = $folderIntroHtml;
+    // Folder page layout: search + navigation cards FIRST (so the page
+    // opens with a usable map), then any folder-level index.md content
+    // BELOW as supplementary detail.
+    $htmlContent = '';
     if ($requestPath !== 'index') {
         // Get top-level folder for tag-based search
         $folderParts = explode('/', $requestPath);
@@ -279,6 +281,11 @@ if (is_dir($dirPath)) {
     $htmlContent .= $folderCards;
     $htmlContent .= $fileCards;
     $htmlContent .= '</div>' . "\n";
+
+    if ($folderIntroHtml !== '') {
+        $htmlContent .= '<hr class="folder-intro-sep">' . "\n";
+        $htmlContent .= $folderIntroHtml;
+    }
 
     $displayPath = $requestPath === 'index' ? '' : $requestPath;
 

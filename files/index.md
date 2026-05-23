@@ -1,123 +1,49 @@
-# DOCI
+{{embed: showcase/hero.html | height=270}}
 
-**Документы, которые любят AI-агенты.**
+DOCI hands an AI agent a place to write — and gives you a way to read,
+question, and route the result. The agent finishes a job, drops a
+report into DOCI, and pastes the link in your chat. You open it, find
+a paragraph that looks off, select the sentence and start a thread.
+The agent picks up that thread on the next turn and replies inside the
+same document.
 
-Агент делает работу и присылает вам ссылку. Вы открываете её в браузере
-и читаете готовый markdown — с заголовком, оглавлением, кодом,
-таблицами, изображениями, цитатами. Если нужно — там же оставляете
-комментарий-тред на конкретной фразе, и агент его видит. Если поднять
-DOCI за VPN, всё хранилище становится приватным: ни одной копии в
-чужом облаке, отчёты от агентов лежат у вас на сервере, версии в
-git.
+{{embed: showcase/architecture.html | height=300}}
 
-## Зачем это вообще
+Everything that lives in DOCI is a plain markdown file in git, with
+metadata (GUID, parent links, tags, soft-delete) in Postgres. The
+same operations — create, read, thread, snapshot, search — are
+available through the **UI**, the **REST API**, the **`deep` CLI**,
+and the **MCP server**. Nothing is locked to a single interface.
 
-AI-агенты пишут markdown гораздо охотнее, чем заполняют формы. Дайте
-им место, куда положить результат, чтобы:
+{{embed: showcase/usage-mix.html | height=270}}
 
-- **Структура.** Документ можно положить в папку, поместить в иерархию,
-  поставить теги.
-- **Версии.** Перед правкой делается snapshot — историю можно отмотать.
-- **Обсуждения.** Открываете тред на выделенной цитате — агент видит
-  ваш вопрос и отвечает в этом же документе.
-- **Стабильная ссылка.** GUID не ломается при переименовании файла —
-  ссылку из чата месячной давности всё ещё можно открыть.
-- **Один API.** UI, REST, CLI (`deep`), MCP-сервер — это всё одни и
-  те же операции. Что умеет агент, то умеет человек, и наоборот.
+{{embed: showcase/features.html | height=360}}
 
-## Что в этой системе уникально
+## Get started in 30 seconds
 
-- **HTML рядом с markdown.** В одной и той же папке могут лежать
-  `report.md` и `dashboard.html` — DOCI отрендерит markdown, а HTML
-  откроет в sandboxed iframe (без доступа к сессии DOCI). Агент может
-  сгенерировать живой интерактивный дашборд вместо стены текста.
-- **MCP-first.** Каждая операция UI доступна агенту как MCP tool.
-  `doci_create`, `doci_thread`, `doci_versions` — те же самые
-  кнопки, только из чата.
-- **Git как backbone.** Не "у нас есть экспорт в markdown" — у нас
-  markdown в git ПО ДИЗАЙНУ. `git log -- files/<путь>` показывает
-  историю любого документа.
+- **Take the tour** → [/tour/00-start-here](/tour/00-start-here)
+  — nine short stops, ten minutes, every feature.
+- **See a realistic example** → [/demo-farm](/demo-farm) — the docs
+  of a small fictional organic farm, with KPIs, SOPs, post-mortems,
+  and an interactive dashboard.
+- **Read the spec** → [/docs/02-spec](/docs/02-spec) — every
+  endpoint, every field.
 
-## Деплоймент
+## Run it for real
 
-### Локально (что сейчас работает)
+For a private install you and your agents share over a VPN:
 
-`docker compose -f docker-compose.dev.yml up -d` — поднимает Postgres
-и Apache в двух контейнерах. Авторизация в dev-режиме автоматическая
-(пользователь `dev`). Это то, что вы сейчас видите.
-
-### За VPN — приватное хранилище для агентов
-
-Один сервер, WireGuard или Tailscale, `docker compose up -d`. Никакого
-reverse proxy не нужно, если вам всё равно на TLS внутри VPN:
-
-1. Ставите DOCI на сервер: `docker compose up -d`, маппите порт 80.
-2. Открываете VPN-доступ к этому серверу.
-3. На клиентах добавляете строчку в `hosts`:
-   `10.x.x.x   docs.local`
-4. Готово — `http://docs.local` доступен только из вашей сети.
-
-Агенту даётся API-ключ через `DOCI_API_KEY_HASH`. Он отправляет
-документ через MCP (или HTTP), а ссылку кидает в чат:
-
-```
-Готово. Отчёт здесь: http://docs.local/a1b2c3d4-...
+```bash
+docker compose up -d
+# add 10.x.x.x docs.local to your hosts file
+# open http://docs.local
 ```
 
-Вы кликаете, читаете, оставляете вопрос на спорной строке — агент
-получит этот тред следующим вызовом и допишет ответ. Никаких внешних
-SaaS-копий ваших данных, никакого Notion-аккаунта, никакого выхода
-в публичный интернет.
+That's the whole setup. No reverse proxy, no SSO provider, no public
+DNS. [Deployment tour stop](/tour/08-deployment) for the production
+patterns and the hardening checklist.
 
-### Если нужен TLS / публичный домен
+---
 
-Поставьте Caddy перед DOCI — `caddy reverse-proxy --to localhost:80`
-с автоматическим Let's Encrypt — пара строк. Если хочется
-полноценный SSO — добавляете любой ForwardAuth (Authelia, Authentik,
-oauth2-proxy), DOCI читает `Remote-User` из заголовков. Это
-опционально, не дефолт.
-
-## Tour
-
-Девять коротких документов — десять минут, и вы видели всё:
-
-→ **[Start the tour](/tour/00-start-here)** ←
-
-## Demo content
-
-Хочешь сразу посмотреть как это выглядит в реальной работе?
-**[Hollow Creek Farm](/demo-farm)** — собранная для демонстрации
-структура документов небольшой органической фермы: посевные планы,
-журналы оборудования, post-mortem-ы инцидентов, дашборд урожайности.
-Можно безопасно удалить когда познакомился.
-
-1. [Documents and editing](/tour/01-documents-and-editing) — стабильный GUID, edit-в-браузере, git commit
-2. [Threads and versions](/tour/02-threads-and-versions) — обсуждение цитаты, авто-снэпшот, навигация по истории
-3. [Inbox](/tour/03-inbox) — quick capture с promote → документ
-4. [HTML pages](/tour/04-html-pages) — sandboxed iframe рядом с markdown
-5. [Search and tags](/tour/05-search-and-tags) — title/tag поиск + опциональный семантический
-6. [Navigation tour](/tour/06-navigation) — мелочи, которыми пользуешься не думая
-7. [MCP, API and CLI](/tour/07-mcp-api-cli) — одна операция, четыре способа вызова
-8. [Deployment](/tour/08-deployment) — local / VPN-private / public
-9. [Versioning and backup](/tour/09-versioning-and-backup) — git уже включён, как зеркалить и бэкапить
-10. [Next steps](/tour/10-next-steps) — кастомизация, подключение агента
-
-## Документация для разработчика
-
-- [Vision](/docs/01-vision) — для чего и для кого
-- [Functional spec](/docs/02-spec) — все API-эндпоинты
-- [Architecture](/docs/03-architecture) — как устроено внутри
-- [Data dictionary](/docs/data-dictionary) — схема БД
-
-## Готово к запуску за VPN?
-
-Минимум:
-
-- `DOCI_DEBUG=false` (выключает dev-авто-логин)
-- `DOCI_API_KEY_HASH=...` (хеш ключа, который вы дадите агенту)
-- Маппинг порта 80 наружу контейнера
-- VPN с доступом к этому хосту
-- Запись в `hosts` на клиентах
-
-Никаких reverse proxy, никаких сертификатов, никакой регистрации
-домена. Reverse proxy и TLS — поверх, когда захотите.
+*DOCI is open source under MIT.
+[github.com/dklymentiev/doci](https://github.com/dklymentiev/doci)*

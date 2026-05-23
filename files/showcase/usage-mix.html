@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document mix</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 22px 26px; font-family: system-ui, sans-serif; background: var(--bg-card, #242424); color: var(--text-primary, #e0e0e0); }
+    h2 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent, #c8a882); }
+    .lede { margin: 0 0 16px; font-size: 12px; color: var(--text-secondary, #999); }
+    .row { display: grid; grid-template-columns: 220px 1fr; gap: 26px; align-items: center; }
+    @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    svg.donut { width: 100%; max-width: 220px; height: 200px; }
+    .legend { display: grid; gap: 12px; }
+    .legend-row { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    .legend-label { color: var(--text-primary, #e0e0e0); }
+    .legend-sub { color: var(--text-muted, #666); font-size: 11px; }
+    .legend-val { color: var(--text-white, #f0f0f0); font-weight: 600; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <h2>Document mix in a typical install</h2>
+  <p class="lede">Each kind plays a different role. Inbox catches half-thoughts. Documents are the slow, structured artifacts. Threads anchor the conversation. Versions freeze time.</p>
+
+  <div class="row">
+    <svg class="donut" viewBox="0 0 42 42">
+      <!-- Donut chart. Circumference = 100. Slices laid out by length+offset. -->
+      <!-- Inbox 22%, Documents 38%, Threads 27%, Versions 13% -->
+      <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--bg-accent, #2e2e2e)" stroke-width="6"/>
+      <!-- Inbox  (start at top, len 22) -->
+      <circle cx="21" cy="21" r="15.9" fill="transparent"
+              stroke="#5ca0ff" stroke-width="6"
+              stroke-dasharray="22 78" stroke-dashoffset="25"
+              transform="rotate(-90 21 21)"/>
+      <!-- Documents (start after Inbox -> offset 25-22 = 3, len 38) -->
+      <circle cx="21" cy="21" r="15.9" fill="transparent"
+              stroke="#c8a882" stroke-width="6"
+              stroke-dasharray="38 62" stroke-dashoffset="3"
+              transform="rotate(-90 21 21)"/>
+      <!-- Threads (offset 3-38 = -35 -> 65, len 27) -->
+      <circle cx="21" cy="21" r="15.9" fill="transparent"
+              stroke="#5cd58c" stroke-width="6"
+              stroke-dasharray="27 73" stroke-dashoffset="65"
+              transform="rotate(-90 21 21)"/>
+      <!-- Versions (offset 65-27 = 38, len 13) -->
+      <circle cx="21" cy="21" r="15.9" fill="transparent"
+              stroke="#f5c46b" stroke-width="6"
+              stroke-dasharray="13 87" stroke-dashoffset="38"
+              transform="rotate(-90 21 21)"/>
+      <text x="21" y="20" text-anchor="middle" fill="var(--text-white, #f0f0f0)" font-size="6" font-weight="600">412</text>
+      <text x="21" y="26" text-anchor="middle" fill="var(--text-secondary, #999)" font-size="3" letter-spacing=".5">DOCUMENTS</text>
+    </svg>
+
+    <div class="legend">
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#c8a882"></span>
+        <span><span class="legend-label">Documents</span><br><span class="legend-sub">long-form, markdown</span></span>
+        <span class="legend-val">38%</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#5cd58c"></span>
+        <span><span class="legend-label">Threads</span><br><span class="legend-sub">on selected quotes</span></span>
+        <span class="legend-val">27%</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#5ca0ff"></span>
+        <span><span class="legend-label">Inbox</span><br><span class="legend-sub">quick captures</span></span>
+        <span class="legend-val">22%</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#f5c46b"></span>
+        <span><span class="legend-label">Versions</span><br><span class="legend-sub">snapshots before edits</span></span>
+        <span class="legend-val">13%</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
