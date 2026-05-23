@@ -1030,3 +1030,9 @@ a:visited { color: var(--accent); }
 /* Inline HTML embed inside markdown (via {{embed:}} shortcode) */
 .doci-html-doc.doci-embed { width: 100%; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-card); margin: 12px 0; }
 .doci-embed-error { padding: 12px 16px; border: 1px dashed var(--error); border-radius: 4px; color: var(--error); font-size: 13px; }
+
+/* Compact 2-column folder cards at bottom of homepage */
+.browse-heading { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 32px 0 12px; }
+.folder-cards-compact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.folder-cards-compact .folder-card { max-width: none; }
+@media (max-width: 720px) { .folder-cards-compact { grid-template-columns: 1fr; } }

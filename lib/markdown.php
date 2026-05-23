@@ -206,8 +206,13 @@ function render_html_document(string $html): string {
     }
 
     $srcdoc = htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
+    // allow-top-navigation-by-user-activation lets links inside the
+    // iframe navigate the parent page (target="_top") on user click --
+    // needed for showcase widgets with CTA buttons that point at DOCI
+    // pages. Still no allow-same-origin, so the iframe is opaque to
+    // DOCI's session.
     return '<iframe class="doci-html-doc"'
-         . ' sandbox="allow-scripts allow-popups allow-forms allow-modals"'
+         . ' sandbox="allow-scripts allow-popups allow-forms allow-modals allow-top-navigation-by-user-activation"'
          . ' referrerpolicy="no-referrer"'
          . ' srcdoc="' . $srcdoc . '"'
          . ' title="HTML document"></iframe>';

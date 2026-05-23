@@ -355,20 +355,22 @@ if (doci_is_html_document($markdownContent)) {
 
 // File path indicator removed - metadata shown at bottom instead
 
-// Add folder and file cards at the top on homepage
+// Append folder/file cards at the BOTTOM of the homepage as a compact
+// two-column grid. (Previously prepended at the top with a "Browse
+// Documents" heading -- they pushed the showcase content down and
+// stretched too wide.)
 if ($requestPath === 'index') {
     $folderCards = render_folder_cards(__DIR__ . '/files', false);
     $fileCards = render_file_cards(__DIR__ . '/files', false);
 
     if (!empty($folderCards) || !empty($fileCards)) {
-        $cardsSection = '<h2>Browse Documents</h2>' . "\n";
-        $cardsSection .= '<div class="folder-cards">' . "\n";
+        $cardsSection  = '<h2 class="browse-heading">Browse</h2>' . "\n";
+        $cardsSection .= '<div class="folder-cards folder-cards-compact">' . "\n";
         $cardsSection .= $folderCards;
         $cardsSection .= $fileCards;
         $cardsSection .= '</div>' . "\n";
-        $cardsSection .= '<hr>' . "\n";
 
-        $htmlContent = $cardsSection . $htmlContent;
+        $htmlContent = $htmlContent . $cardsSection;
     }
 }
 
