@@ -806,6 +806,15 @@ function get_recent_files(string $basePath, int $limit = 20): array {
         $fullPath = $file->getPathname();
         $relativePath = substr($fullPath, strlen($filesDir) + 1);
 
+        // Skip files under dot-prefixed folders (e.g. .showcase/, .data/).
+        // These are implementation details, not user-facing documents.
+        $relParts = explode('/', $relativePath);
+        $hidden = false;
+        foreach ($relParts as $part) {
+            if ($part !== '' && $part[0] === '.') { $hidden = true; break; }
+        }
+        if ($hidden) continue;
+
         // Skip auto-generated report directories that flood recent list
         $skipPrefixes = ['top-monitor/reports/', 'top-monitor/archive/'];
         $skip = false;
@@ -825,7 +834,11 @@ function get_recent_files(string $basePath, int $limit = 20): array {
         $content = file_get_contents($fullPath);
         if ($extension === 'md') {
             $title = ucwords(str_replace(['-', '_'], ' ', pathinfo($filename, PATHINFO_FILENAME)));
-            if (preg_match('/^#\s+(.+)$/m', $content, $matches)) {
+            // Strip fenced code blocks before scanning -- otherwise shell
+            // comments like '# install foo' inside ```bash``` blocks get
+            // mistaken for a markdown H1.
+            $contentForTitle = preg_replace('/```.*?```/s', '', $content);
+            if (preg_match('/^#\s+(.+)$/m', $contentForTitle, $matches)) {
                 $title = trim($matches[1]);
             }
         } else {
