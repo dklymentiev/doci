@@ -33,6 +33,7 @@ debug.php
 # Production data (keep directory structure only)
 files/*
 !files/.gitkeep
+!files/index.md
 !files/inbox/
 files/inbox/*
 !files/inbox/.gitkeep

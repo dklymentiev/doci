@@ -66,14 +66,22 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Get user info from Traefik ForwardAuth headers (set by Authum)
-// Authum sends Remote-User header with username
+// Get user info from reverse-proxy ForwardAuth header
+// Production deploys typically set Remote-User from an auth middleware
 $remoteUser = $_SERVER['HTTP_REMOTE_USER'] ?? null;
 
 // Validate Remote-User header format (alphanumeric, underscore, hyphen only)
 if ($remoteUser !== null && !preg_match('/^[a-zA-Z0-9_-]+$/', $remoteUser)) {
     doci_log('auth.invalid_username', ['raw' => substr($remoteUser, 0, 50)], 'WARN');
     $remoteUser = null;
+}
+
+// Dev-mode auto-auth: when DOCI_DEBUG=true and no auth was provided,
+// authenticate as 'dev'. Set DOCI_DEBUG only in trusted local setups
+// (docker-compose.dev.yml sets it). Production compose defaults to false.
+if ($remoteUser === null && getenv('DOCI_DEBUG') === 'true' && empty($_SERVER['HTTP_X_API_KEY'])) {
+    $remoteUser = 'dev';
+    $_SERVER['HTTP_REMOTE_USER'] = 'dev';
 }
 
 // Regenerate session ID on authentication change (prevent session fixation)

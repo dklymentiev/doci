@@ -104,8 +104,8 @@ function render_page(string $title, string $content, string $path, bool $showRec
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= htmlspecialchars(get_csrf_token()) ?>">
     <title><?= htmlspecialchars($title) ?> - DOCI</title>
-    <link rel="stylesheet" href="/shared-assets/hq-theme.css?v=<?= filemtime('/var/www/html/shared-assets/hq-theme.css') ?>">
-    <link rel="stylesheet" href="/shared-assets/doci.css?v=<?= filemtime('/var/www/html/shared-assets/doci.css') ?>">
+    <link rel="stylesheet" href="/assets/hq-theme.css?v=<?= @filemtime(__DIR__ . '/../assets/hq-theme.css') ?: time() ?>">
+    <link rel="stylesheet" href="/assets/doci.css?v=<?= @filemtime(__DIR__ . '/../assets/doci.css') ?: time() ?>">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>!function(){var s=localStorage.getItem('hq_theme');var t=s!==null?s:'mesh';document.documentElement.dataset.theme=t}()</script>
 </head>
