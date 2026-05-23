@@ -874,6 +874,33 @@
         var selectedModel = 'sonnet';
         if (!modal) return;
 
+        // If no AI provider is configured server-side, hide every AI
+        // control in the thread modal -- otherwise users tick a checkbox
+        // that always fails. The whole label container is removed.
+        var aiCfg = (config.ai || { enabled: false, models: [] });
+        if (!aiCfg.enabled) {
+            var aiLabel = aiToggle ? aiToggle.closest('label') : null;
+            if (aiLabel) aiLabel.style.display = 'none';
+            if (modelSelector) modelSelector.style.display = 'none';
+        } else {
+            // Hide chips for model aliases the operator didn't configure.
+            var allowedModels = aiCfg.models || [];
+            var firstAllowed = null;
+            modelChips.forEach(function(chip) {
+                if (allowedModels.indexOf(chip.dataset.model) === -1) {
+                    chip.style.display = 'none';
+                } else if (firstAllowed === null) {
+                    firstAllowed = chip.dataset.model;
+                }
+            });
+            if (firstAllowed && allowedModels.indexOf(selectedModel) === -1) {
+                selectedModel = firstAllowed;
+                modelChips.forEach(function(c) {
+                    c.classList.toggle('selected', c.dataset.model === selectedModel);
+                });
+            }
+        }
+
         if (aiToggle && modelSelector) {
             aiToggle.addEventListener('change', function() {
                 modelSelector.classList.toggle('visible', this.checked);

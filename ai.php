@@ -240,101 +240,90 @@ function build_user_message(string $quote, string $comment): string {
 }
 
 /**
- * Call AI Gateway using CLI session
+ * Whether AI features are wired up. False when AI_GATEWAY_URL or
+ * AI_API_KEY are unset -- the API endpoints and UI should hide AI
+ * controls in that case.
  *
- * 1. Create session with model
- * 2. Send message (system prompt + user message combined)
- * 3. Get response
- * 4. Close session
+ * @return bool
  */
-function call_ai_gateway(string $systemPrompt, string $userMessage, string $model): array {
-    $sessionId = null;
-
-    try {
-        // Step 1: Create CLI session
-        doci_log('ai.gateway.session.create', ['model' => $model]);
-
-        $createPayload = [
-            'service' => 'doci',
-            'model' => $model,
-            'system_prompt' => $systemPrompt
-        ];
-
-        $createResult = ai_gateway_request('POST', '/sessions', $createPayload);
-
-        if (!$createResult['success']) {
-            return $createResult;
-        }
-
-        $sessionId = $createResult['data']['session_id'] ?? null;
-        if (!$sessionId) {
-            return ['success' => false, 'error' => 'No session_id in response'];
-        }
-
-        doci_log('ai.gateway.session.created', ['session_id' => $sessionId]);
-
-        // Step 2: Send chat message
-        doci_log('ai.gateway.chat.send', [
-            'session_id' => $sessionId,
-            'message_length' => strlen($userMessage)
-        ]);
-
-        $chatPayload = ['content' => $userMessage];
-        $chatResult = ai_gateway_request('POST', "/sessions/{$sessionId}/chat", $chatPayload);
-
-        // Step 3: Close session (even if chat failed)
-        doci_log('ai.gateway.session.close', ['session_id' => $sessionId]);
-        ai_gateway_request('DELETE', "/sessions/{$sessionId}");
-        $sessionId = null;
-
-        if (!$chatResult['success']) {
-            return $chatResult;
-        }
-
-        $content = $chatResult['data']['content'] ?? '';
-        if (empty($content)) {
-            doci_log('ai.gateway.empty_response', [], 'WARN');
-            return ['success' => false, 'error' => 'Empty response from AI'];
-        }
-
-        doci_log('ai.gateway.success', [
-            'response_length' => strlen($content),
-            'usage' => $chatResult['data']['usage'] ?? null
-        ]);
-
-        return ['success' => true, 'content' => $content];
-
-    } catch (Exception $e) {
-        // Cleanup session on error
-        if ($sessionId) {
-            doci_log('ai.gateway.session.cleanup', ['session_id' => $sessionId]);
-            ai_gateway_request('DELETE', "/sessions/{$sessionId}");
-        }
-
-        doci_log('ai.gateway.exception', ['error' => $e->getMessage()], 'ERROR');
-        return ['success' => false, 'error' => $e->getMessage()];
-    }
+function ai_is_configured(): bool {
+    if (AI_GATEWAY_URL === '') return false;
+    $key = getenv('AI_API_KEY');
+    return $key !== false && $key !== '';
 }
 
 /**
- * Make request to AI Gateway
+ * Resolve a friendly model alias ('haiku', 'sonnet', 'opus' or any name)
+ * to the provider-specific model identifier read from
+ * AI_MODEL_<ALIAS>. Returns null if not configured.
+ *
+ * @param string $alias
+ * @return string|null
  */
-function ai_gateway_request(string $method, string $endpoint, ?array $payload = null): array {
-    $url = AI_GATEWAY_BASE_URL . $endpoint;
+function ai_get_model_id(string $alias): ?string {
+    $alias = strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', $alias));
+    if ($alias === '') return null;
+    $envKey = 'AI_MODEL_' . strtoupper($alias);
+    $v = getenv($envKey);
+    if ($v === false || $v === '') return null;
+    return $v;
+}
+
+/**
+ * Call an OpenAI-compatible /chat/completions endpoint. Works against
+ * OpenAI, OpenRouter, Together.ai, Groq, Fireworks, Ollama, llama.cpp
+ * server, vLLM, LM Studio, or any other provider speaking the same
+ * protocol.
+ *
+ * @param string $systemPrompt
+ * @param string $userMessage
+ * @param string $modelAlias  Friendly alias mapped via AI_MODEL_<ALIAS> env
+ * @return array ['success' => bool, 'content' => string|null, 'error' => string|null]
+ */
+function call_ai_gateway(string $systemPrompt, string $userMessage, string $modelAlias): array {
+    if (!ai_is_configured()) {
+        return ['success' => false, 'error' => 'AI not configured: set AI_GATEWAY_URL and AI_API_KEY'];
+    }
+
+    $modelId = ai_get_model_id($modelAlias);
+    if ($modelId === null) {
+        return [
+            'success' => false,
+            'error' => "Model '$modelAlias' not configured: set AI_MODEL_" . strtoupper($modelAlias)
+        ];
+    }
+
+    $url = rtrim(AI_GATEWAY_URL, '/') . '/chat/completions';
+    $apiKey = getenv('AI_API_KEY');
+
+    $payload = [
+        'model' => $modelId,
+        'messages' => [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user',   'content' => $userMessage],
+        ],
+        'max_tokens' => 4096,
+    ];
+
+    doci_log('ai.chat.send', [
+        'model_alias' => $modelAlias,
+        'model_id' => $modelId,
+        'message_length' => strlen($userMessage)
+    ]);
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST => $method,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey,
+        ],
         CURLOPT_TIMEOUT => AI_GATEWAY_TIMEOUT,
         CURLOPT_SSL_VERIFYPEER => AI_GATEWAY_SSL_VERIFY,
-        CURLOPT_SSL_VERIFYHOST => AI_GATEWAY_SSL_VERIFY ? 2 : 0
+        CURLOPT_SSL_VERIFYHOST => AI_GATEWAY_SSL_VERIFY ? 2 : 0,
     ]);
-
-    if ($payload !== null && in_array($method, ['POST', 'PUT', 'PATCH'])) {
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    }
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -342,41 +331,37 @@ function ai_gateway_request(string $method, string $endpoint, ?array $payload = 
     curl_close($ch);
 
     if ($error) {
-        doci_log('ai.gateway.curl_error', [
-            'endpoint' => $endpoint,
-            'error' => $error
-        ], 'ERROR');
+        doci_log('ai.chat.curl_error', ['error' => $error], 'ERROR');
         return ['success' => false, 'error' => 'Connection error: ' . $error];
     }
-
     if ($httpCode >= 400) {
-        doci_log('ai.gateway.http_error', [
-            'endpoint' => $endpoint,
+        doci_log('ai.chat.http_error', [
             'http_code' => $httpCode,
-            'response' => substr($response, 0, 500)
+            'response' => substr((string)$response, 0, 500)
         ], 'ERROR');
-        return ['success' => false, 'error' => "HTTP error: {$httpCode}"];
+        return ['success' => false, 'error' => "HTTP $httpCode from AI provider"];
     }
 
     $data = json_decode($response, true);
-    if ($response && !$data) {
-        doci_log('ai.gateway.json_error', [
-            'endpoint' => $endpoint,
-            'response' => substr($response, 0, 500)
-        ], 'ERROR');
-        return ['success' => false, 'error' => 'Invalid JSON response'];
+    if (!is_array($data)) {
+        return ['success' => false, 'error' => 'Invalid JSON from AI provider'];
+    }
+    $content = $data['choices'][0]['message']['content'] ?? '';
+    if (!is_string($content) || $content === '') {
+        doci_log('ai.chat.empty_response', ['data' => $data], 'WARN');
+        return ['success' => false, 'error' => 'Empty response from AI provider'];
     }
 
-    if (isset($data['error'])) {
-        doci_log('ai.gateway.api_error', [
-            'endpoint' => $endpoint,
-            'error' => $data['error']
-        ], 'ERROR');
-        return ['success' => false, 'error' => $data['error']];
-    }
+    doci_log('ai.chat.success', [
+        'response_length' => strlen($content),
+        'usage' => $data['usage'] ?? null
+    ]);
 
-    return ['success' => true, 'data' => $data];
+    return ['success' => true, 'content' => $content];
 }
+
+// Legacy session-based ai_gateway_request() was removed; call_ai_gateway()
+// now talks directly to an OpenAI-compatible /chat/completions endpoint.
 
 /**
  * Replace AI placeholder with response in thread file

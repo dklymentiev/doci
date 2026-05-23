@@ -344,11 +344,24 @@ function render_page(string $title, string $content, string $path, bool $showRec
     ">^</button>
 
     <script>
+    <?php
+        // Surface AI provider availability to the client. JS uses this
+        // to hide AI controls (the thread modal's "Use AI" checkbox and
+        // its model chips) when the operator has not configured a
+        // provider, instead of letting users tick a checkbox that fails.
+        require_once __DIR__ . '/../ai.php';
+        $aiEnabled = ai_is_configured();
+        $aiModels = [];
+        foreach (['haiku', 'sonnet', 'opus'] as $alias) {
+            if (ai_get_model_id($alias) !== null) $aiModels[] = $alias;
+        }
+    ?>
     window.__DOCI = {
         rawMarkdown: <?= json_encode($rawContent ?? '', JSON_UNESCAPED_UNICODE) ?>,
         currentPath: <?= json_encode($path, JSON_UNESCAPED_UNICODE) ?>,
         editPath: <?= json_encode($editPath ?? '', JSON_UNESCAPED_UNICODE) ?>,
-        documentGuid: <?= json_encode($documentGuid ?? '', JSON_UNESCAPED_UNICODE) ?>
+        documentGuid: <?= json_encode($documentGuid ?? '', JSON_UNESCAPED_UNICODE) ?>,
+        ai: { enabled: <?= $aiEnabled ? 'true' : 'false' ?>, models: <?= json_encode($aiModels) ?> }
     };
     </script>
     <script src="/assets/app.js?v=<?= filemtime('/var/www/html/assets/app.js') ?>"></script>

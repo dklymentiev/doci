@@ -32,7 +32,11 @@ define('DOCI_ROOT', __DIR__);
 define('FILES_PATH', getenv('FILES_PATH') ?: __DIR__ . '/files');
 
 // AI Gateway configuration
-define('AI_GATEWAY_URL', getenv('AI_GATEWAY_URL') ?: 'https://ai.example.com/api/v1');
+// AI provider URL (OpenAI-compatible /chat/completions endpoint).
+// Empty by default -- AI features stay disabled until you point this at
+// a real provider (OpenAI, OpenRouter, Together.ai, Groq, Ollama,
+// llama.cpp server, or your own gateway speaking the same protocol).
+define('AI_GATEWAY_URL', getenv('AI_GATEWAY_URL') ?: '');
 
 // Application URLs (configurable for different deployments)
 define('APP_URL', getenv('APP_URL') ?: 'https://doci.example.com');
