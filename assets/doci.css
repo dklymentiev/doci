@@ -134,10 +134,10 @@ a:visited { color: var(--accent); }
 .edit-mode { margin-top: 1rem; }
 .markdown-editor {
     width: 100%;
-    /* Fill the viewport minus the breadcrumbs / meta chrome above the
-     * editor. Still resizable vertically. */
-    height: calc(100vh - 180px);
-    min-height: 320px;
+    /* Always full viewport height. Overrides any browser-saved
+     * textarea sizing from a previous session. */
+    height: 92vh !important;
+    min-height: 92vh;
     padding: 16px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
