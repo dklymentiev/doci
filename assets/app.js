@@ -295,6 +295,9 @@
                         versionBar.style.display = 'none';
                     }
 
+                    // Sync edit/delete controls visibility with the new path
+                    syncEditControls(data.meta);
+
                     document.title = data.title + ' - DOCI';
 
                     if (pushState) {
@@ -477,8 +480,14 @@
 
         if (!editBtn || !editor) return;
 
+        var controls = document.querySelector('.edit-controls');
         var originalContent = editor.value;
-        var currentPath = config.editPath || '';
+        function getEditPath() {
+            return (controls && controls.dataset.editPath) || config.editPath || '';
+        }
+        function getDocGuid() {
+            return (controls && controls.dataset.docGuid) || config.documentGuid || '';
+        }
 
         editBtn.addEventListener('click', function() {
             viewMode.style.display = 'none';
@@ -509,7 +518,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 body: JSON.stringify({
-                    path: currentPath,
+                    path: getEditPath(),
                     content: editor.value
                 })
             })
@@ -544,8 +553,8 @@
         // Delete button handler
         var deleteBtn = document.getElementById('delete-btn');
         if (deleteBtn) {
-            var docGuid = config.documentGuid || '';
             deleteBtn.addEventListener('click', function() {
+                var docGuid = getDocGuid();
                 if (!docGuid) {
                     alert('Cannot delete: document not registered');
                     return;
@@ -577,6 +586,41 @@
                     deleteBtn.disabled = false;
                     deleteBtn.textContent = 'Delete';
                 });
+            });
+        }
+    }
+
+    // Called after AJAX navigation to re-sync the edit/delete controls
+    // and the editor textarea with the newly loaded document.
+    function syncEditControls(meta) {
+        var controls = document.querySelector('.edit-controls');
+        var editor = document.getElementById('editor');
+        var editMode = document.getElementById('edit-mode');
+        if (!controls || !meta) return;
+
+        if (meta.isEditable) {
+            controls.style.display = '';
+            controls.dataset.editPath = meta.editPath || '';
+            controls.dataset.docGuid = meta.guid || '';
+            if (editor) {
+                editor.value = meta.rawContent || '';
+            }
+        } else {
+            controls.style.display = 'none';
+            controls.dataset.editPath = '';
+            controls.dataset.docGuid = '';
+            if (editor) editor.value = '';
+        }
+
+        // If the editor was open for the previous page, snap back to view mode.
+        if (editMode && editMode.style.display !== 'none') {
+            editMode.style.display = 'none';
+            var viewMode = document.getElementById('view-mode');
+            if (viewMode) viewMode.style.display = 'block';
+            ['edit-btn','save-btn','cancel-btn'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.style.display = (id === 'edit-btn') ? 'inline-block' : 'none';
             });
         }
     }

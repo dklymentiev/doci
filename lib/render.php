@@ -210,15 +210,13 @@ function render_page(string $title, string $content, string $path, bool $showRec
                 <form method="GET" action="/search.html" class="search-bar-form" onsubmit="return true;">
                     <input type="text" name="q" placeholder="Search..." class="search-bar-input" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
                 </form>
-                <?php if ($isEditable): ?>
-                <div class="edit-controls">
+                <div class="edit-controls" data-edit-path="<?= htmlspecialchars($isEditable ? $editPath : '') ?>" data-doc-guid="<?= htmlspecialchars($documentGuid ?? '') ?>"<?= $isEditable ? '' : ' style="display:none"' ?>>
                     <button id="edit-btn" class="edit-btn" title="Edit this page">Edit</button>
                     <button id="save-btn" class="edit-btn save-btn" style="display:none">Save</button>
                     <button id="cancel-btn" class="edit-btn cancel-btn" style="display:none">Cancel</button>
                     <button id="delete-btn" class="edit-btn delete-btn" title="Delete this document">Delete</button>
                     <span id="edit-status" class="edit-status"></span>
                 </div>
-                <?php endif; ?>
             </div>
 
             <div class="document-meta">
@@ -273,11 +271,9 @@ function render_page(string $title, string $content, string $path, bool $showRec
                 <?= $content ?>
             </article>
 
-            <?php if ($isEditable): ?>
             <div id="edit-mode" class="edit-mode" style="display:none">
-                <textarea id="editor" class="markdown-editor"><?= htmlspecialchars($rawContent ?? '') ?></textarea>
+                <textarea id="editor" class="markdown-editor"><?= htmlspecialchars($isEditable ? ($rawContent ?? '') : '') ?></textarea>
             </div>
-            <?php endif; ?>
 
             <?php if ($documentGuid): ?>
             <?php

@@ -336,11 +336,16 @@ if ($isAjax) {
     header('Content-Type: application/json; charset=UTF-8');
 
     // Build metadata for response
+    $mdFilePath = __DIR__ . '/files/' . $requestPath . '.md';
+    $isEditable = $requestPath !== 'index' && !empty($requestPath) && file_exists($mdFilePath);
     $meta = [
         'path' => $requestPath . '.md',
         'guid' => $documentRecord['guid'] ?? null,
         'isThread' => ($documentRecord['doc_type'] ?? null) === 'thread',
         'isDirectory' => false,
+        'isEditable' => $isEditable,
+        'editPath' => $isEditable ? $requestPath : '',
+        'rawContent' => $isEditable ? file_get_contents($mdFilePath) : '',
     ];
 
     // Add thread-specific info
