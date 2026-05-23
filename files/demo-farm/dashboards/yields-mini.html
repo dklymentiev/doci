@@ -7,72 +7,118 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 14px 16px;
+      padding: 18px 22px;
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       background: var(--bg-card, #242424);
       color: var(--text-primary, #e0e0e0);
     }
-    .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
-    .kpi { background: var(--bg-accent, #2e2e2e); border: 1px solid var(--border, #333); border-radius: 6px; padding: 10px 12px; }
-    .kpi-label { font-size: 10px; color: var(--text-secondary, #999); text-transform: uppercase; letter-spacing: .05em; }
-    .kpi-value { font-size: 19px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; color: var(--text-white, #f0f0f0); }
-    .kpi-sub { font-size: 10px; color: var(--text-secondary, #999); margin-top: 2px; }
+
+    .layout { display: grid; grid-template-columns: 1fr 1.4fr; gap: 22px; align-items: stretch; }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } }
+
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; }
+    .kpi {
+      background: var(--bg-accent, #2e2e2e);
+      border: 1px solid var(--border, #333);
+      border-radius: 8px;
+      padding: 12px 14px;
+      position: relative;
+    }
+    .kpi-label { font-size: 10px; color: var(--text-secondary, #999); text-transform: uppercase; letter-spacing: .07em; }
+    .kpi-value { font-size: 22px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; color: var(--text-white, #f0f0f0); line-height: 1.1; }
+    .kpi-sub { font-size: 10px; color: var(--text-secondary, #999); margin-top: 4px; }
     .kpi-sub.up { color: var(--ok, #81c784); }
     .kpi-sub.down { color: var(--error, #e57373); }
+    .kpi-sub.up::before { content: "▲ "; }
+    .kpi-sub.down::before { content: "▼ "; }
 
-    .chart-title { font-size: 11px; color: var(--text-secondary, #999); text-transform: uppercase; letter-spacing: .05em; margin: 0 0 6px; }
-    .chart { display: grid; grid-template-columns: 100px 1fr 50px; gap: 8px; align-items: center; font-size: 12px; }
-    .chart-label { color: var(--text-primary, #e0e0e0); }
-    .chart-bar { background: var(--bg-accent, #2e2e2e); border-radius: 3px; height: 10px; overflow: hidden; }
-    .chart-bar > div { height: 100%; background: var(--accent, #c8a882); }
-    .chart-num { text-align: right; color: var(--text-secondary, #999); font-variant-numeric: tabular-nums; }
+    .chart-wrap {
+      background: var(--bg-accent, #2e2e2e);
+      border: 1px solid var(--border, #333);
+      border-radius: 8px;
+      padding: 14px 16px 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-title { font-size: 11px; color: var(--text-secondary, #999); text-transform: uppercase; letter-spacing: .07em; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; }
+    .chart-title em { font-style: normal; color: var(--text-muted, #666); font-size: 10px; }
+    .chart-svg { width: 100%; height: 140px; flex: 1; }
+    .chart-svg .axis { stroke: var(--text-muted, #666); stroke-opacity: 0.3; }
+    .chart-svg .bar { fill: var(--accent, #c8a882); transition: fill .15s; }
+    .chart-svg .bar.dim { fill: var(--accent, #c8a882); fill-opacity: 0.45; }
+    .chart-svg .bar:hover { fill: var(--accent-hover, #d4ba96); }
+    .chart-svg .bar-label { fill: var(--text-secondary, #999); font: 500 10px/1 system-ui, sans-serif; }
+    .chart-svg .bar-value { fill: var(--text-white, #f0f0f0); font: 600 11px/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+    .chart-svg .avg-line { stroke: var(--text-secondary, #999); stroke-width: 1; stroke-dasharray: 3 3; stroke-opacity: 0.6; }
+    .chart-svg .avg-label { fill: var(--text-secondary, #999); font: 10px/1 system-ui, sans-serif; }
   </style>
 </head>
 <body>
-  <div class="row">
-    <div class="kpi">
-      <div class="kpi-label">CSA shares</div>
-      <div class="kpi-value">84 / 84</div>
-      <div class="kpi-sub up">target met</div>
+  <div class="layout">
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-label">CSA shares</div>
+        <div class="kpi-value">84 / 84</div>
+        <div class="kpi-sub up">target met</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Dairy / week</div>
+        <div class="kpi-value">560 gal</div>
+        <div class="kpi-sub up">+4% vs '25</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Sales YTD</div>
+        <div class="kpi-value">$28.4k</div>
+        <div class="kpi-sub up">+18%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Open hires</div>
+        <div class="kpi-value">2</div>
+        <div class="kpi-sub">need by Jun 1</div>
+      </div>
     </div>
-    <div class="kpi">
-      <div class="kpi-label">Dairy / week</div>
-      <div class="kpi-value">560 gal</div>
-      <div class="kpi-sub up">+4% vs 2025</div>
+
+    <div class="chart-wrap">
+      <p class="chart-title"><span>Dairy gallons by month -- 2026</span><em>partial: May</em></p>
+      <svg class="chart-svg" viewBox="0 0 500 160" preserveAspectRatio="none">
+        <!-- horizontal grid lines -->
+        <line class="axis" x1="0"   y1="20"  x2="500" y2="20"  />
+        <line class="axis" x1="0"   y1="60"  x2="500" y2="60"  />
+        <line class="axis" x1="0"   y1="100" x2="500" y2="100" />
+        <line class="axis" x1="0"   y1="140" x2="500" y2="140" />
+
+        <!-- average line @ ~2300 gal -->
+        <line class="avg-line" x1="0" y1="35" x2="500" y2="35" />
+        <text class="avg-label" x="496" y="32" text-anchor="end">avg 2,300</text>
+
+        <!-- bars (h scaled: 2810 max -> ~115px). bar width 70, x-gap 30 -->
+        <g>
+          <rect class="bar"      x="20"  y="51"  width="70" height="89"  rx="3" />
+          <text class="bar-value" x="55"  y="46"  text-anchor="middle">2,180</text>
+          <text class="bar-label" x="55"  y="155" text-anchor="middle">Jan</text>
+        </g>
+        <g>
+          <rect class="bar"      x="120" y="48"  width="70" height="92"  rx="3" />
+          <text class="bar-value" x="155" y="43"  text-anchor="middle">2,260</text>
+          <text class="bar-label" x="155" y="155" text-anchor="middle">Feb</text>
+        </g>
+        <g>
+          <rect class="bar"      x="220" y="25"  width="70" height="115" rx="3" />
+          <text class="bar-value" x="255" y="20"  text-anchor="middle">2,810</text>
+          <text class="bar-label" x="255" y="155" text-anchor="middle">Mar</text>
+        </g>
+        <g>
+          <rect class="bar"      x="320" y="49"  width="70" height="91"  rx="3" />
+          <text class="bar-value" x="355" y="44"  text-anchor="middle">2,240</text>
+          <text class="bar-label" x="355" y="155" text-anchor="middle">Apr</text>
+        </g>
+        <g>
+          <rect class="bar dim"  x="420" y="71"  width="70" height="69"  rx="3" />
+          <text class="bar-value" x="455" y="66"  text-anchor="middle">1,680</text>
+          <text class="bar-label" x="455" y="155" text-anchor="middle">May*</text>
+        </g>
+      </svg>
     </div>
-    <div class="kpi">
-      <div class="kpi-label">Sales YTD</div>
-      <div class="kpi-value">$28,420</div>
-      <div class="kpi-sub up">+18%</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Open positions</div>
-      <div class="kpi-value">2</div>
-      <div class="kpi-sub">need by Jun 1</div>
-    </div>
-  </div>
-
-  <p class="chart-title">Dairy gallons by month (2026)</p>
-  <div class="chart">
-    <div class="chart-label">January</div>
-    <div class="chart-bar"><div style="width:78%"></div></div>
-    <div class="chart-num">2,180</div>
-
-    <div class="chart-label">February</div>
-    <div class="chart-bar"><div style="width:80%"></div></div>
-    <div class="chart-num">2,260</div>
-
-    <div class="chart-label">March</div>
-    <div class="chart-bar"><div style="width:100%"></div></div>
-    <div class="chart-num">2,810</div>
-
-    <div class="chart-label">April</div>
-    <div class="chart-bar"><div style="width:80%"></div></div>
-    <div class="chart-num">2,240</div>
-
-    <div class="chart-label">May (partial)</div>
-    <div class="chart-bar"><div style="width:60%"></div></div>
-    <div class="chart-num">1,680</div>
   </div>
 </body>
 </html>
