@@ -23,7 +23,8 @@ DOCI is a self-hosted document workspace where:
 
 ## Next
 
-- Read [docs/01-vision.md](/../docs/01-vision.md) for the design intent.
-- Read [docs/02-spec.md](/../docs/02-spec.md) for the API surface.
-- Read [docs/03-architecture.md](/../docs/03-architecture.md) for how
-  the pieces fit together.
+- Read [Vision](/docs/01-vision) for the design intent.
+- Read [Functional Spec](/docs/02-spec) for the API surface.
+- Read [Architecture](/docs/03-architecture) for how the pieces fit
+  together.
+- Read [Data Dictionary](/docs/data-dictionary) for the database schema.
