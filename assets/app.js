@@ -210,7 +210,10 @@
     // ========================================================================
     function initAjaxNavigation() {
         var contentArea = document.querySelector('.markdown-content');
-        var breadcrumbsArea = document.querySelector('.breadcrumbs');
+        // Update only the breadcrumb link list -- the surrounding `.breadcrumbs`
+        // container also holds the search form and the edit/delete controls,
+        // which must survive SPA navigation.
+        var breadcrumbsArea = document.querySelector('.breadcrumbs-links');
         var sidebarNav = document.querySelector('.sidebar-nav');
         var recentSidebar = document.querySelector('.recent-sidebar');
 
