@@ -91,7 +91,8 @@ oauth2-proxy), DOCI читает `Remote-User` из заголовков. Это
 6. [Navigation tour](/tour/06-navigation) — мелочи, которыми пользуешься не думая
 7. [MCP, API and CLI](/tour/07-mcp-api-cli) — одна операция, четыре способа вызова
 8. [Deployment](/tour/08-deployment) — local / VPN-private / public
-9. [Next steps](/tour/09-next-steps) — кастомизация, подключение агента
+9. [Versioning and backup](/tour/09-versioning-and-backup) — git уже включён, как зеркалить и бэкапить
+10. [Next steps](/tour/10-next-steps) — кастомизация, подключение агента
 
 ## Документация для разработчика
 

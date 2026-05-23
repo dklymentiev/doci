@@ -101,4 +101,4 @@ Postgres is metadata; rebuild from scratch with
 summaries / explicit titles. So back it up too -- `pg_dump doci` to
 a daily file.
 
-→ Next: [Next steps](/tour/09-next-steps)
+→ Next: [Versioning and backup](/tour/09-versioning-and-backup)

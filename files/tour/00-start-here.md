@@ -36,6 +36,8 @@ HTML rendering, search -- is in service of that single loop.
 7. **[MCP, API and CLI](/tour/07-mcp-api-cli)** -- one operation, four
    ways to call it
 8. **[Deployment](/tour/08-deployment)** -- local, VPN-private, public
-9. **[Next steps](/tour/09-next-steps)** -- reset demo data, customize
+9. **[Versioning and backup](/tour/09-versioning-and-backup)** -- git
+   is already on, here's how to mirror it and back up Postgres
+10. **[Next steps](/tour/10-next-steps)** -- reset demo data, customize
 
 → Continue: [Documents and editing](/tour/01-documents-and-editing)
