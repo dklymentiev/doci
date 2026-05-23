@@ -261,22 +261,11 @@ if (is_dir($dirPath)) {
         }
     }
 
-    // Folder page layout: search + navigation cards FIRST (so the page
-    // opens with a usable map), then any folder-level index.md content
-    // BELOW as supplementary detail.
+    // Folder page layout: navigation cards FIRST (so the page opens
+    // with a usable map), then any folder-level index.md content
+    // BELOW as supplementary detail. Search uses the global form in
+    // the breadcrumbs bar -- no second form on folder pages.
     $htmlContent = '';
-    if ($requestPath !== 'index') {
-        // Get top-level folder for tag-based search
-        $folderParts = explode('/', $requestPath);
-        $topFolder = $folderParts[0];
-        $folderTitle = ucwords(str_replace(['-', '_'], ' ', $topFolder));
-        $htmlContent .= '<form method="GET" action="/search.html" class="folder-search-form">' . "\n";
-        $htmlContent .= '  <input type="hidden" name="folder" value="' . htmlspecialchars($topFolder) . '">' . "\n";
-        $htmlContent .= '  <input type="text" name="q" class="folder-search-input" placeholder="Search in ' . htmlspecialchars($folderTitle) . '...">' . "\n";
-        $htmlContent .= '  <button type="submit" class="folder-search-btn">Search</button>' . "\n";
-        $htmlContent .= '</form>' . "\n";
-    }
-
     $htmlContent .= '<div class="folder-cards">' . "\n";
     $htmlContent .= $folderCards;
     $htmlContent .= $fileCards;
