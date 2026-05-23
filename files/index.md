@@ -83,6 +83,14 @@ oauth2-proxy), DOCI читает `Remote-User` из заголовков. Это
 
 → **[Start the tour](/tour/00-start-here)** ←
 
+## Demo content
+
+Хочешь сразу посмотреть как это выглядит в реальной работе?
+**[Hollow Creek Farm](/demo-farm)** — собранная для демонстрации
+структура документов небольшой органической фермы: посевные планы,
+журналы оборудования, post-mortem-ы инцидентов, дашборд урожайности.
+Можно безопасно удалить когда познакомился.
+
 1. [Documents and editing](/tour/01-documents-and-editing) — стабильный GUID, edit-в-браузере, git commit
 2. [Threads and versions](/tour/02-threads-and-versions) — обсуждение цитаты, авто-снэпшот, навигация по истории
 3. [Inbox](/tour/03-inbox) — quick capture с promote → документ

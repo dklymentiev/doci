@@ -37,6 +37,9 @@ files/*
 !files/inbox/
 files/inbox/*
 !files/inbox/.gitkeep
+!files/inbox/20260518-grant-deadline.md
+!files/inbox/20260520-tractor-noise.md
 !files/example/
 !files/docs/
 !files/tour/
+!files/demo-farm/
