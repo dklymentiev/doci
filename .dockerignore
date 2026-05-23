@@ -14,7 +14,6 @@ docker-compose*.yml
 Dockerfile
 .dockerignore
 tests/
-migrations/
 DATABASE.md
 README.md
 MEMORY.md

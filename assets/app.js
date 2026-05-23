@@ -40,7 +40,64 @@
         initThreadReply();
         initEntityChips();
         initSearchPreview();
+        initKeyDocToggle();
     });
+
+    function initKeyDocToggle() {
+        var btn = document.getElementById('key-doc-toggle');
+        if (!btn) return;
+        btn.addEventListener('click', async function (e) {
+            e.preventDefault();
+            var guid = btn.dataset.guid;
+            var isKey = btn.classList.contains('is-key');
+            try {
+                if (isKey) {
+                    var r = await fetch('/api/key-document.php?guid=' + encodeURIComponent(guid), { credentials: 'same-origin' });
+                    var data = await r.json();
+                    var items = (data && data.items) || [];
+                    if (items.length === 0) {
+                        if (confirm('This document is marked key but has no detail rows. Add one?')) await markKey();
+                        return;
+                    }
+                    var lines = items.map(function (it) {
+                        return '  id ' + it.id + '  domain=' + (it.domain || '') + (it.label ? '  label="' + it.label + '"' : '');
+                    }).join('\n');
+                    var pick = prompt('Key-document records on this doc:\n\n' + lines + '\n\nEnter id to remove, or A to add another, or blank to cancel:');
+                    if (!pick) return;
+                    if (pick.trim().toUpperCase() === 'A') { await markKey(); return; }
+                    var id = parseInt(pick, 10);
+                    if (!id) return;
+                    var resp = await fetch('/api/key-document.php?id=' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken }, credentials: 'same-origin' });
+                    var rd = await resp.json();
+                    if (rd.success) window.location.reload();
+                    else alert('Remove failed: ' + (rd.error || 'unknown'));
+                } else {
+                    await markKey();
+                }
+            } catch (err) { alert('Error: ' + err.message); }
+        });
+
+        async function markKey() {
+            var domain = prompt('Domain (e.g. marketing, infrastructure, compliance, ops):');
+            if (!domain) return;
+            domain = domain.trim();
+            if (!domain) return;
+            var label = prompt('Short label for this doc in that domain (optional):') || null;
+            var description = prompt('Why is this document key? (optional):') || null;
+            var update_trigger = prompt('When must it be reviewed/updated? (optional)\nExamples: "When brand identity changes", "Quarterly", "Before each release":') || null;
+            try {
+                var resp = await fetch('/api/key-document.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ guid: btn.dataset.guid, domain: domain, label: label, description: description, update_trigger: update_trigger })
+                });
+                var data = await resp.json();
+                if (data.success) window.location.reload();
+                else alert('Mark failed: ' + (data.error || 'unknown'));
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+    }
 
     // ========================================================================
     // Back to Top Button

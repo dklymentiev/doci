@@ -60,6 +60,18 @@ export HOME=/var/www
 # Postgres for the indexer.
 (
     sleep 5
+    # Apply pending migrations (idempotent via IF NOT EXISTS).
+    if [ -d /var/www/html/migrations ]; then
+        for m in /var/www/html/migrations/*.sql; do
+            [ -f "$m" ] || continue
+            php -r '
+                require_once "/var/www/html/config.php";
+                $pdo = get_db();
+                $sql = file_get_contents($argv[1]);
+                try { $pdo->exec($sql); } catch (Throwable $e) { fwrite(STDERR, "migration ".basename($argv[1]).": ".$e->getMessage()."\n"); }
+            ' "$m" 2>&1 | grep -v '^$' || true
+        done
+    fi
     if [ -f /var/www/html/scripts/index-documents.php ]; then
         php /var/www/html/scripts/index-documents.php 2>&1 | tail -20 || true
     fi

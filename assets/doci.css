@@ -1040,3 +1040,19 @@ a:visited { color: var(--accent); }
 .folder-cards-compact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .folder-cards-compact .folder-card { max-width: none; }
 @media (max-width: 720px) { .folder-cards-compact { grid-template-columns: 1fr; } }
+
+/* Key (canonical) document marker + toggle */
+.key-toggle {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    transition: all .15s;
+    line-height: 1;
+}
+.key-toggle:hover { color: var(--accent); border-color: var(--border); }
+.key-toggle.is-key { color: var(--accent); }
+.nav-key-star { color: var(--accent); margin-right: 2px; font-size: 11px; }

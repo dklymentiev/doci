@@ -230,6 +230,12 @@ function render_page(string $title, string $content, string $path, bool $showRec
                 <?php if ($documentGuid): ?>
                 <span class="meta-sep">|</span>
                 <span class="meta-item"><span class="meta-label">GUID:</span> <span class="document-guid" id="copy-guid" data-url="<?= APP_URL ?>/<?= htmlspecialchars($documentGuid) ?>"><?= htmlspecialchars($documentGuid) ?></span></span>
+                <?php
+                    require_once __DIR__ . '/key-documents.php';
+                    $isKey = is_key_document($documentGuid);
+                ?>
+                <span class="meta-sep">|</span>
+                <button id="key-doc-toggle" class="key-toggle <?= $isKey ? 'is-key' : '' ?>" data-guid="<?= htmlspecialchars($documentGuid) ?>" title="<?= $isKey ? 'Marked as key document -- click to manage' : 'Mark as key document' ?>"><?= $isKey ? '★' : '☆' ?></button>
                 <?php endif; ?>
                 <?php
                 $commits = git_get_file_history($path . '.md', 3);
@@ -422,7 +428,7 @@ function render_file_tree(string $basePath, string $urlPath = '', string $curren
         } elseif (preg_match('/\.(md|html)$/', $item)) {
             $name = preg_replace('/\.(md|html)$/', '', $item);
             $fileUrl = $urlPath ? $urlPath . '/' . $name : $name;
-            $files[$name] = ['url' => $fileUrl, 'active' => ($fileUrl === $currentPath)];
+            $files[$name] = ['url' => $fileUrl, 'active' => ($fileUrl === $currentPath), 'mdPath' => $itemUrl];
         }
     }
 
@@ -448,11 +454,29 @@ function render_file_tree(string $basePath, string $urlPath = '', string $curren
     }
 
     // Render files
+    require_once __DIR__ . '/key-documents.php';
+    static $pathToGuid = null;
+    if ($pathToGuid === null) {
+        $pathToGuid = [];
+        try {
+            $pdo = get_db();
+            $stmt = $pdo->query("SELECT path, guid FROM documents WHERE deleted_at IS NULL AND doc_type IN ('document','version')");
+            if ($stmt) {
+                while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $pathToGuid[$r['path']] = $r['guid'];
+                }
+            }
+        } catch (Throwable $e) {}
+    }
     foreach ($files as $name => $data) {
         $title = ucwords(str_replace(['-', '_'], ' ', $name));
         $activeClass = $data['active'] ? ' nav-active' : '';
+        // Star indicator if this file's GUID is marked key in any domain.
+        $mdPath = $data['mdPath'] ?? '';
+        $guid = $pathToGuid[$mdPath] ?? null;
+        $star = ($guid && is_key_document($guid)) ? '<span class="nav-key-star" title="Key document">★</span> ' : '';
         $html .= '<div class="nav-file' . $activeClass . '" style="padding-left:' . $pad . 'px">';
-        $html .= '<a href="/' . htmlspecialchars($data['url']) . '.html">' . htmlspecialchars($title) . '</a>';
+        $html .= '<a href="/' . htmlspecialchars($data['url']) . '.html">' . $star . htmlspecialchars($title) . '</a>';
         $html .= '</div>';
     }
 
