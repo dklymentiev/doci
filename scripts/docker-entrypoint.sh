@@ -46,4 +46,18 @@ fi
 # set by default. Git config files live at /var/www/.config/git/config.
 export HOME=/var/www
 
+# Index any markdown/HTML files that exist on disk but don't yet have a
+# documents-table row -- otherwise the meta bar can't show a stable
+# GUID for seeded content (tour stops, demo-farm, docs). Idempotent;
+# skips files that are already registered.
+#
+# Backgrounded with a brief startup delay so Apache doesn't wait on
+# Postgres for the indexer.
+(
+    sleep 5
+    if [ -f /var/www/html/scripts/index-documents.php ]; then
+        php /var/www/html/scripts/index-documents.php 2>&1 | tail -20 || true
+    fi
+) &
+
 exec docker-php-entrypoint "$@"
