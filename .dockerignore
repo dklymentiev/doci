@@ -1,0 +1,50 @@
+# Environment and secrets
+.env
+.env.*
+.api-key
+.api-key-hash
+.doci-api-key
+
+# Git
+.git
+.gitignore
+
+# Development
+docker-compose*.yml
+Dockerfile
+.dockerignore
+tests/
+migrations/
+DATABASE.md
+README.md
+MEMORY.md
+CLAUDE.md
+CHANGELOG.md
+
+# Logs
+*.log
+error_log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP dev
+vendor/
+composer.lock
+composer.phar
+.phpunit.*
+
+# Debug
+test-*.php
+debug.php
+
+# Production data (mounted as volume)
+files/

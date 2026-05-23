@@ -1,0 +1,46 @@
+services:
+  doci:
+    build: .
+    container_name: doci
+    restart: always
+    environment:
+      # Database (REQUIRED)
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=5432
+      - DB_NAME=doci
+      - DB_USER=doci_app
+      - DB_PASS=${DOCI_DB_PASS:?Database password required}
+      # API Key (hash of the key for secure comparison)
+      - DOCI_API_KEY_HASH=${DOCI_API_KEY_HASH:-}
+      # AI Gateway
+      - AI_GATEWAY_URL=${AI_GATEWAY_URL:-https://ai.example.com/api/v1}
+      - AI_GATEWAY_SSL_VERIFY=${AI_GATEWAY_SSL_VERIFY:-true}
+      # Logging (set to true for debug)
+      - DOCI_DEBUG=${DOCI_DEBUG:-false}
+      # Domain for git commits
+      - DOCI_DOMAIN=${DOCI_DOMAIN:-doci.example.com}
+      # Application URLs
+      - APP_URL=${APP_URL:-https://doci.example.com}
+      - AUTH_URL=${AUTH_URL:-https://auth.example.com}
+      - EXTERNAL_SCRIPTS_URL=${EXTERNAL_SCRIPTS_URL:-}
+      # Timezone
+      - TZ=${TZ:-America/Chicago}
+    volumes:
+      - ./files:/var/www/html/files
+      - ./.git:/var/www/html/.git:ro
+      - doci-logs:/var/log/doci
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.doci.rule=Host(`${DOCI_DOMAIN:-doci.example.com}`)"
+      - "traefik.http.routers.doci.entrypoints=https"
+      - "traefik.http.routers.doci.tls=true"
+      - "traefik.http.services.doci.loadbalancer.server.port=80"
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true
+
+volumes:
+  doci-logs:

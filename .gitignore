@@ -1,0 +1,39 @@
+# Environment files (contain secrets)
+.env
+.api-key
+.api-key-hash
+.doci-api-key
+
+# Logs
+*.log
+error_log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP
+vendor/
+composer.lock
+composer.phar
+.phpunit.cache/
+.phpunit.result.cache
+
+# Debug
+test-*.php
+debug.php
+
+# Production data (keep directory structure only)
+files/*
+!files/.gitkeep
+!files/inbox/
+files/inbox/*
+!files/inbox/.gitkeep
+!files/example/
