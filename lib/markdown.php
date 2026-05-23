@@ -137,7 +137,7 @@ function render_html_document(string $html): string {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     $baseUrl = htmlspecialchars($scheme . '://' . $host, ENT_QUOTES, 'UTF-8');
-    $themeLink = '<link rel="stylesheet" href="' . $baseUrl . '/assets/hq-theme.css">';
+    $themeLink = '<link rel="stylesheet" href="' . $baseUrl . '/assets/doci-theme.css">';
 
     // Listen for theme updates from the parent. The parent posts the active
     // theme on iframe load and on every theme toggle so the iframe stays
@@ -146,10 +146,10 @@ function render_html_document(string $html): string {
         . 'if(e.data&&typeof e.data.docTheme==="string"){'
         . 'document.documentElement.dataset.theme=e.data.docTheme}});</script>';
 
-    // Default <html data-theme> to "mesh" so the iframe doesn't flash the
-    // out-of-the-box HQ palette before the postMessage arrives.
+    // Default <html data-theme> to "dark" so the iframe matches the parent's
+    // default before the postMessage arrives.
     if (preg_match('#<html(?![^>]*data-theme=)([^>]*)>#i', $html)) {
-        $html = preg_replace('#<html(?![^>]*data-theme=)([^>]*)>#i', '<html$1 data-theme="mesh">', $html, 1);
+        $html = preg_replace('#<html(?![^>]*data-theme=)([^>]*)>#i', '<html$1 data-theme="dark">', $html, 1);
     }
 
     $injection = $themeLink . $themeListener;

@@ -1,19 +1,9 @@
 /**
- * DOCI - Application-specific styles
- * Used alongside hq-theme.css
+ * DOCI -- application-specific styles, loaded alongside doci-theme.css.
  *
- * Source: /server/assets/doci.css
- * Mounted: /var/www/html/shared-assets/doci.css (bind mount, ro)
- * Container: doci
- *
- * How to update:
- * 1. Edit this file: /server/assets/doci.css
- * 2. Changes apply immediately (bind mount), just refresh the page
- * 3. If Cloudflare caches — hard refresh (Ctrl+Shift+R)
- *
- * Usage in HTML:
- * <link rel="stylesheet" href="/shared-assets/hq-theme.css">
- * <link rel="stylesheet" href="/shared-assets/doci.css">
+ * Usage:
+ *   <link rel="stylesheet" href="/assets/doci-theme.css">
+ *   <link rel="stylesheet" href="/assets/doci.css">
  */
 
 /* ==========================================================================

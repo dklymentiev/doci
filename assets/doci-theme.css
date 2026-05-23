@@ -1,19 +1,9 @@
 /**
- * HQ Theme - Unified Theme with Switchable Palettes
- * Version: 3.0
+ * DOCI theme -- two palettes, dark and light.
  *
- * Source: /server/hq/app/hq-theme.css
- * Copy at: /server/assets/hq-theme.css (must be synced manually!)
- * Mounted: /var/www/html/shared-assets/hq-theme.css (bind mount from /server/assets/)
- *
- * Themes:
- * - Default (HQ):  Navy blue palette (#1a1a2e, #16213e, #0f3460)
- * - Mesh:          Neutral dark palette (#1a1a1a, #242424, #2e2e2e)
- * - Light:         Minimal black & white (#fff, #f5f5f5, #eee)
- *
- * Switch via: document.documentElement.dataset.theme = 'mesh' | 'light' | ''
- * Stored in: localStorage('hq_theme')
- * URL override: ?theme=light|mesh|hq
+ * Default is dark. Switch with:
+ *   document.documentElement.dataset.theme = 'light'
+ * Stored in localStorage('doci_theme'). No theme value (or 'dark') means dark.
  */
 
 /* ==========================================================================
@@ -22,65 +12,35 @@
 
 :root {
     /* Background */
-    --bg-main:       #1a1a2e;
-    --bg-card:       #16213e;
-    --bg-accent:     #0f3460;
-    --bg-hover:      #1f4068;
-    --bg-overlay:    rgba(0,0,0,0.95);
-
-    /* Primary */
-    --primary:       #0f0;
-    --secondary:     #c8a882;
-    --accent:        #c8a882;
-    --accent-hover:  #d4ba96;
-
-    /* Text */
-    --text-primary:  #eee;
-    --text-white:    #fff;
-    --text-secondary: #999;
-    --text-muted:    #666;
-
-    /* Status */
-    --ok:            #0f0;
-    --error:         #f44;
-    --warn:          #ff0;
-    --orange:        #fa0;
-
-    /* Borders */
-    --border:        #0f3460;
-    --border-hover:  #1f4068;
-
-    /* Scrollbar */
-    --scrollbar-track: #1a1a2e;
-    --scrollbar-thumb: #0f3460;
-    --scrollbar-hover: #1f4068;
-}
-
-[data-theme="mesh"] {
     --bg-main:       #1a1a1a;
     --bg-card:       #242424;
     --bg-accent:     #2e2e2e;
     --bg-hover:      #353535;
     --bg-overlay:    rgba(0,0,0,0.95);
 
+    /* Primary */
     --primary:       #e0e0e0;
     --secondary:     #c8a882;
     --accent:        #c8a882;
     --accent-hover:  #d4ba96;
 
+    /* Text */
     --text-primary:  #e0e0e0;
     --text-white:    #f0f0f0;
     --text-secondary: #999;
     --text-muted:    #666;
 
+    /* Status */
     --ok:            #81c784;
     --error:         #e57373;
     --warn:          #ffd54f;
     --orange:        #ffb74d;
 
+    /* Borders */
     --border:        #333;
     --border-hover:  #444;
 
+    /* Scrollbar */
     --scrollbar-track: #1a1a1a;
     --scrollbar-thumb: #333;
     --scrollbar-hover: #444;

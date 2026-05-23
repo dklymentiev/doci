@@ -62,11 +62,11 @@ navigation -- the page swaps without a full reload.
 
 ## Theme toggle
 
-Top-right of the sidebar, button labeled **Theme**. Cycles through the
-three palettes: HQ (navy), Mesh (neutral dark), Light (minimal black
-& white). Selection persists to localStorage as `hq_theme`. You can
-also force a theme with `?theme=light` / `?theme=mesh` / `?theme=hq`
-in the URL.
+Top-right of the sidebar, button labeled with the current theme name
+(**Dark** or **Light**). Click to toggle. Selection persists to
+localStorage as `doci_theme`. HTML documents rendered in a sandboxed
+iframe pick up the same theme automatically (parent → iframe over
+`postMessage`).
 
 ## Back to top
 

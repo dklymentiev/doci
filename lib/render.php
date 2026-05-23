@@ -104,10 +104,10 @@ function render_page(string $title, string $content, string $path, bool $showRec
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= htmlspecialchars(get_csrf_token()) ?>">
     <title><?= htmlspecialchars($title) ?> - DOCI</title>
-    <link rel="stylesheet" href="/assets/hq-theme.css?v=<?= @filemtime(__DIR__ . '/../assets/hq-theme.css') ?: time() ?>">
+    <link rel="stylesheet" href="/assets/doci-theme.css?v=<?= @filemtime(__DIR__ . '/../assets/doci-theme.css') ?: time() ?>">
     <link rel="stylesheet" href="/assets/doci.css?v=<?= @filemtime(__DIR__ . '/../assets/doci.css') ?: time() ?>">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <script>!function(){var s=localStorage.getItem('hq_theme');var t=s!==null?s:'mesh';document.documentElement.dataset.theme=t}()</script>
+    <script>!function(){var s=localStorage.getItem('doci_theme');var t=s==='light'?'light':'dark';document.documentElement.dataset.theme=t}()</script>
 </head>
 <body>
     <!-- Context menu for text selection -->
@@ -348,12 +348,12 @@ function render_page(string $title, string $content, string $path, bool $showRec
     <script src="<?= htmlspecialchars(EXTERNAL_SCRIPTS_URL) ?>/external-links.js"></script>
     <?php endif; ?>
 <script>
-var THEMES=['','mesh','light'],THEME_NAMES={'':'HQ','mesh':'Mesh','light':'Light'};
-function getTheme(){var s=localStorage.getItem('hq_theme');return s!==null?s:'mesh'}
-function applyTheme(t){document.documentElement.dataset.theme=t;var l=document.querySelector('.theme-toggle-label');if(l)l.textContent=THEME_NAMES[t]||'HQ';syncIframeTheme(t)}
+var THEMES=['dark','light'],THEME_NAMES={'dark':'Dark','light':'Light'};
+function getTheme(){var s=localStorage.getItem('doci_theme');return s==='light'?'light':'dark'}
+function applyTheme(t){document.documentElement.dataset.theme=t;var l=document.querySelector('.theme-toggle-label');if(l)l.textContent=THEME_NAMES[t]||'Dark';syncIframeTheme(t)}
 function syncIframeTheme(t){document.querySelectorAll('iframe.doci-html-doc').forEach(function(f){try{f.contentWindow.postMessage({docTheme:t},'*')}catch(e){}})}
 document.addEventListener('load',function(e){if(e.target&&e.target.classList&&e.target.classList.contains('doci-html-doc')){try{e.target.contentWindow.postMessage({docTheme:getTheme()},'*')}catch(err){}}},true);
-function toggleTheme(){var c=getTheme(),n=THEMES[(THEMES.indexOf(c)+1)%THEMES.length];localStorage.setItem('hq_theme',n);applyTheme(n)}
+function toggleTheme(){var c=getTheme(),n=THEMES[(THEMES.indexOf(c)+1)%THEMES.length];localStorage.setItem('doci_theme',n);applyTheme(n)}
 applyTheme(getTheme());
 </script>
 <script>
