@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DOCI showcase</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --c-blue: #5ca0ff;
+      --c-green: #5cd58c;
+      --c-yellow: #f5c46b;
+      --c-accent: var(--accent, #c8a882);
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg-card, #242424);
+      color: var(--text-primary, #e0e0e0);
+      line-height: 1.5;
+    }
+
+    /* ============ HERO ============ */
+    .hero {
+      position: relative;
+      padding: 38px 40px 32px;
+      background:
+        radial-gradient(circle at 88% 18%, rgba(200,168,130,0.22), transparent 55%),
+        radial-gradient(circle at 12% 82%, rgba(92,160,255,0.10), transparent 55%),
+        linear-gradient(135deg, var(--bg-card, #242424) 0%, var(--bg-accent, #2e2e2e) 100%);
+      border-bottom: 1px solid var(--border, #333);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid var(--c-accent);
+      color: var(--c-accent);
+      border-radius: 12px;
+      background: rgba(200,168,130,0.07);
+      margin-bottom: 14px;
+    }
+    h1.hero-h {
+      margin: 0 0 10px;
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      color: var(--text-white, #f0f0f0);
+      line-height: 1.05;
+    }
+    h1.hero-h .accent { color: var(--c-accent); }
+    .tagline {
+      margin: 0 0 22px;
+      font-size: 16px;
+      line-height: 1.55;
+      max-width: 720px;
+      color: var(--text-secondary, #999);
+    }
+    .tagline strong { color: var(--text-primary, #e0e0e0); font-weight: 600; }
+    .ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+    a.cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all .15s;
+      border: 1px solid transparent;
+    }
+    a.cta.primary { background: var(--c-accent); color: #1a1a1a; }
+    a.cta.primary:hover { background: var(--accent-hover, #d4ba96); transform: translateY(-1px); }
+    a.cta.secondary { border-color: var(--border, #333); color: var(--text-primary, #e0e0e0); background: transparent; }
+    a.cta.secondary:hover { border-color: var(--c-accent); color: var(--text-white, #f0f0f0); }
+    a.cta .arrow { transition: transform .15s; }
+    a.cta:hover .arrow { transform: translateX(3px); }
+
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } h1.hero-h { font-size: 30px; } .hero { padding: 26px; } }
+    .stat {
+      background: rgba(0,0,0,0.18);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border, #333);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .stat-num { font-size: 22px; font-weight: 700; color: var(--text-white, #f0f0f0); font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .stat-lbl { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary, #999); margin-top: 3px; }
+
+    /* ============ SECTION ============ */
+    section { padding: 30px 40px; border-bottom: 1px solid var(--border, #333); }
+    @media (max-width: 700px) { section { padding: 24px 26px; } }
+    section:last-child { border-bottom: 0; }
+    .section-h {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin: 0 0 14px;
+    }
+    .section-h h2 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--c-accent);
+    }
+    .section-h em {
+      font-style: normal;
+      font-size: 11px;
+      color: var(--text-muted, #666);
+    }
+
+    /* ============ LOOP + DONUT ============ */
+    .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 36px; align-items: start; }
+    @media (max-width: 820px) { .two-col { grid-template-columns: 1fr; gap: 28px; } }
+
+    .lede { margin: 0 0 18px; font-size: 12px; color: var(--text-secondary, #999); }
+
+    svg.loop { width: 100%; height: 210px; }
+    .loop .node rect { fill: var(--bg-accent, #2e2e2e); stroke: var(--border, #333); stroke-width: 1; rx: 8; ry: 8; }
+    .loop .node text.title { fill: var(--text-white, #f0f0f0); font: 600 13px system-ui; }
+    .loop .node text.sub   { fill: var(--text-secondary, #999); font: 11px system-ui; }
+    .loop .node.agent rect, .loop .node.human rect { stroke: var(--c-accent); stroke-width: 1.5; }
+    .loop .arrow { stroke: var(--c-accent); stroke-width: 1.5; fill: none; marker-end: url(#arr); }
+    .loop .arrow-label { fill: var(--text-secondary, #999); font: 11px system-ui; }
+
+    .donut-row { display: grid; grid-template-columns: 160px 1fr; gap: 22px; align-items: center; }
+    @media (max-width: 480px) { .donut-row { grid-template-columns: 1fr; } svg.donut { margin: 0 auto; } }
+    svg.donut { width: 100%; max-width: 160px; height: 160px; }
+    .legend { display: grid; gap: 10px; }
+    .legend-row { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+    .legend-dot { width: 11px; height: 11px; border-radius: 2px; }
+    .legend-label { color: var(--text-primary, #e0e0e0); }
+    .legend-sub { color: var(--text-muted, #666); font-size: 10px; }
+    .legend-val { color: var(--text-white, #f0f0f0); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* ============ FEATURES GRID ============ */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--bg-accent, #2e2e2e);
+      border: 1px solid var(--border, #333);
+      border-radius: 8px;
+      padding: 16px 18px;
+      transition: all .15s;
+    }
+    .card:hover { transform: translateY(-2px); border-color: var(--c-accent); }
+    .card .icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(200,168,130,0.12);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+    }
+    .card .icon svg { width: 18px; height: 18px; stroke: var(--c-accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .card h3 { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: var(--text-white, #f0f0f0); }
+    .card p  { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary, #999); }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">v0.1.0 -- open source</div>
+    <h1 class="hero-h">Documents <span class="accent">for AI agents.</span></h1>
+    <p class="tagline">
+      Self-hostable workspace where agents <strong>write reports</strong>,
+      send you the link, and you reply with a <strong>thread on the exact
+      sentence that looked off</strong>. Markdown in git, metadata in
+      Postgres, one API for UI, MCP, CLI, and REST.
+    </p>
+    <div class="ctas">
+      <a class="cta primary" href="/tour/00-start-here" target="_top">Take the tour <span class="arrow">→</span></a>
+      <a class="cta secondary" href="/demo-farm" target="_top">See a real example</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">75+</div><div class="stat-lbl">Features</div></div>
+      <div class="stat"><div class="stat-num">4</div><div class="stat-lbl">Interfaces</div></div>
+      <div class="stat"><div class="stat-num">1</div><div class="stat-lbl">Repository</div></div>
+      <div class="stat"><div class="stat-num">2</div><div class="stat-lbl">Themes</div></div>
+    </div>
+  </div>
+
+  <!-- LOOP + DONUT (two columns) -->
+  <section>
+    <div class="two-col">
+      <div>
+        <div class="section-h"><h2>The loop</h2><em>same flow in either direction</em></div>
+        <p class="lede">Agent writes, DOCI stores and commits, you read &mdash; in any order. Same operations across UI, MCP, REST, CLI.</p>
+        <svg class="loop" viewBox="0 0 540 200" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M0,0 L0,10 L10,5 z" fill="var(--c-accent)"/>
+            </marker>
+          </defs>
+          <g class="node agent" transform="translate(10, 65)">
+            <rect width="120" height="70"/>
+            <text class="title" x="60" y="30" text-anchor="middle">AI agent</text>
+            <text class="sub"   x="60" y="48" text-anchor="middle">Claude, MCP</text>
+          </g>
+          <g class="node" transform="translate(210, 30)">
+            <rect width="120" height="140"/>
+            <text class="title" x="60" y="30" text-anchor="middle">DOCI</text>
+            <text class="sub"   x="60" y="54" text-anchor="middle">REST &middot; MCP</text>
+            <text class="sub"   x="60" y="72" text-anchor="middle">git &middot; postgres</text>
+            <text class="sub"   x="60" y="96" text-anchor="middle">─────────</text>
+            <text class="sub"   x="60" y="114" text-anchor="middle">documents</text>
+            <text class="sub"   x="60" y="132" text-anchor="middle">threads &middot; versions</text>
+          </g>
+          <g class="node human" transform="translate(410, 65)">
+            <rect width="120" height="70"/>
+            <text class="title" x="60" y="30" text-anchor="middle">You</text>
+            <text class="sub"   x="60" y="48" text-anchor="middle">browser, on VPN</text>
+          </g>
+          <path class="arrow" d="M 130 90  C 170 85, 180 65, 210 60"/>
+          <text class="arrow-label" x="170" y="65" text-anchor="middle">writes</text>
+          <path class="arrow" d="M 330 60  C 360 65, 380 85, 410 90"/>
+          <text class="arrow-label" x="370" y="65" text-anchor="middle">link</text>
+          <path class="arrow" d="M 410 110 C 380 115, 360 135, 330 140"/>
+          <text class="arrow-label" x="370" y="148" text-anchor="middle">thread</text>
+          <path class="arrow" d="M 210 140 C 180 135, 170 115, 130 110"/>
+          <text class="arrow-label" x="170" y="148" text-anchor="middle">picks up</text>
+        </svg>
+      </div>
+
+      <div>
+        <div class="section-h"><h2>Document mix</h2><em>typical install</em></div>
+        <p class="lede">Four kinds, each playing its own role: inbox catches half-thoughts, documents are slow artifacts, threads anchor conversation, versions freeze time.</p>
+        <div class="donut-row">
+          <svg class="donut" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--bg-accent, #2e2e2e)" stroke-width="6"/>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--c-blue)"   stroke-width="6" stroke-dasharray="22 78" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--c-accent)" stroke-width="6" stroke-dasharray="38 62" stroke-dashoffset="3"  transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--c-green)"  stroke-width="6" stroke-dasharray="27 73" stroke-dashoffset="65" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--c-yellow)" stroke-width="6" stroke-dasharray="13 87" stroke-dashoffset="38" transform="rotate(-90 21 21)"/>
+            <text x="21" y="20" text-anchor="middle" fill="var(--text-white, #f0f0f0)" font-size="6" font-weight="600">412</text>
+            <text x="21" y="26" text-anchor="middle" fill="var(--text-secondary, #999)" font-size="3" letter-spacing=".5">DOCS</text>
+          </svg>
+          <div class="legend">
+            <div class="legend-row"><span class="legend-dot" style="background:var(--c-accent)"></span><span><span class="legend-label">Documents</span> <span class="legend-sub">long-form md</span></span><span class="legend-val">38%</span></div>
+            <div class="legend-row"><span class="legend-dot" style="background:var(--c-green)"></span><span><span class="legend-label">Threads</span> <span class="legend-sub">on quotes</span></span><span class="legend-val">27%</span></div>
+            <div class="legend-row"><span class="legend-dot" style="background:var(--c-blue)"></span><span><span class="legend-label">Inbox</span> <span class="legend-sub">quick capture</span></span><span class="legend-val">22%</span></div>
+            <div class="legend-row"><span class="legend-dot" style="background:var(--c-yellow)"></span><span><span class="legend-label">Versions</span> <span class="legend-sub">snapshots</span></span><span class="legend-val">13%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID -->
+  <section>
+    <div class="section-h"><h2>What's inside</h2><em>headline features</em></div>
+    <div class="features">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <h3>Stable GUID</h3>
+        <p>Every document keeps its UUID through rename, move, even soft-delete. Links never rot.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <h3>Auto-versioned</h3>
+        <p>Every save is a git commit. Threads auto-snapshot. Restore any past state of any document.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 15.6-3.8z"/></svg></div>
+        <h3>Threads on a quote</h3>
+        <p>Select text, right-click, type a question. Anchored to that exact passage.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <h3>MCP-native</h3>
+        <p>12+ tools your agent calls directly. Same surface as the UI. No translation layer.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg></div>
+        <h3>HTML next to markdown</h3>
+        <p>Drop an interactive dashboard into the same folder as a memo. Sandboxed iframe in DOCI's shell.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 22s-8-4-8-12V5l8-3 8 3v5c0 8-8 12-8 12z"/></svg></div>
+        <h3>Self-host, VPN-private</h3>
+        <p>One server, one VPN. No external SaaS. Your agents' output stays on your hardware.</p>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

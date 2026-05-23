@@ -1,21 +1,4 @@
-{{embed: showcase/hero.html | height=270}}
-
-DOCI hands an AI agent a place to write — and gives you a way to read,
-question, and route the result. The agent finishes a job, drops a
-report into DOCI, and pastes the link in your chat. You open it, find
-a paragraph that looks off, select the sentence and start a thread.
-The agent picks up that thread on the next turn and replies inside the
-same document.
-
-{{embed: showcase/loop-and-mix.html | height=300}}
-
-Everything that lives in DOCI is a plain markdown file in git, with
-metadata (GUID, parent links, tags, soft-delete) in Postgres. The
-same operations — create, read, thread, snapshot, search — are
-available through the **UI**, the **REST API**, the **`deep` CLI**,
-and the **MCP server**. Nothing is locked to a single interface.
-
-{{embed: showcase/features.html | height=360}}
+{{embed: .showcase/main.html | height=1180}}
 
 ## Get started in 30 seconds
 
