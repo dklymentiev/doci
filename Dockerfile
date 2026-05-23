@@ -41,6 +41,12 @@ RUN mkdir -p /var/www/.config/git \
     && echo "    directory = /var/www/html/files" >> /var/www/.config/git/config \
     && chown -R www-data:www-data /var/www/.config
 
+# Custom entrypoint: init files/ as a git repo on first run, then hand off
+# to the default php:8.2-apache entrypoint.
+RUN chmod +x /var/www/html/scripts/docker-entrypoint.sh
+ENTRYPOINT ["/var/www/html/scripts/docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
+
 # Expose port
 EXPOSE 80
 

@@ -62,6 +62,13 @@ function git_commit_and_push(string $path, string $message, string $author): arr
         return ['error' => 'Cannot access repository directory'];
     }
 
+    // Apache typically forks PHP with HOME unset, so git can't find the
+    // safe.directory config at /var/www/.config/git/config and aborts with
+    // "dubious ownership" on bind-mounted working trees. Force HOME for
+    // the duration of the git invocations.
+    $oldHome = getenv('HOME');
+    putenv('HOME=/var/www');
+
     try {
         // Stage the file
         $output = [];
@@ -78,20 +85,35 @@ function git_commit_and_push(string $path, string $message, string $author): arr
             return ['success' => true, 'message' => 'No changes to commit'];
         }
 
-        // Commit using environment variables for author (safer than --author flag)
-        $output = [];
+        // Commit using environment variables for author (safer than --author flag).
+        // Set them through putenv() rather than shell-prefix syntax: dash (the
+        // default /bin/sh in many container images) does not accept quoted
+        // assignments like 'VAR'=value, which exec() produces from
+        // escapeshellarg().
         $env = [
             'GIT_AUTHOR_NAME' => $author,
             'GIT_AUTHOR_EMAIL' => $email,
             'GIT_COMMITTER_NAME' => $author,
-            'GIT_COMMITTER_EMAIL' => $email
+            'GIT_COMMITTER_EMAIL' => $email,
         ];
-        $envString = '';
+        $previous = [];
         foreach ($env as $key => $value) {
-            $envString .= escapeshellarg($key) . '=' . escapeshellarg($value) . ' ';
+            $previous[$key] = getenv($key);
+            putenv("$key=$value");
         }
-        $commitCmd = $envString . 'git commit -m ' . escapeshellarg($message) . ' 2>&1';
-        exec($commitCmd, $output, $code);
+        try {
+            $output = [];
+            $commitCmd = 'git commit -m ' . escapeshellarg($message) . ' 2>&1';
+            exec($commitCmd, $output, $code);
+        } finally {
+            foreach ($previous as $key => $value) {
+                if ($value === false) {
+                    putenv($key);
+                } else {
+                    putenv("$key=$value");
+                }
+            }
+        }
 
         if ($code !== 0) {
             doci_log('git.commit_failed', ['output' => implode("\n", $output)], 'ERROR');
@@ -120,6 +142,11 @@ function git_commit_and_push(string $path, string $message, string $author): arr
 
     } finally {
         chdir($oldCwd);
+        if ($oldHome !== false) {
+            putenv('HOME=' . $oldHome);
+        } else {
+            putenv('HOME');
+        }
     }
 }
 
