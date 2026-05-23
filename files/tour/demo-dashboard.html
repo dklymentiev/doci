@@ -4,54 +4,71 @@
   <meta charset="UTF-8">
   <title>DOCI HTML demo: agent run summary</title>
   <style>
-    :root {
-      --bg: #0f1117;
-      --panel: #161922;
-      --border: #242936;
-      --text: #e6e9ef;
-      --muted: #8c95a8;
-      --accent: #5ca0ff;
-      --good: #5cd58c;
-      --warn: #f5c46b;
-      --bad: #f57f7f;
-    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       padding: 32px;
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg-main, #1a1a2e);
+      color: var(--text-primary, #eee);
       min-height: 100vh;
     }
-    h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; }
-    .lede { color: var(--muted); margin: 0 0 24px; font-size: 13px; }
+    h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; color: var(--text-white, #fff); }
+    .lede { color: var(--text-secondary, #999); margin: 0 0 24px; font-size: 13px; }
+    code { background: var(--bg-accent, #0f3460); padding: 1px 6px; border-radius: 3px; font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 12px; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
-    .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; }
-    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-    .stat-value { font-size: 24px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
-    .stat-value.good { color: var(--good); }
-    .stat-value.warn { color: var(--warn); }
-    .stat-value.bad { color: var(--bad); }
-    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; margin-bottom: 16px; }
-    .panel h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+    .stat {
+      background: var(--bg-card, #16213e);
+      border: 1px solid var(--border, #0f3460);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    .stat-label { font-size: 11px; color: var(--text-secondary, #999); text-transform: uppercase; letter-spacing: .05em; }
+    .stat-value { font-size: 24px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; color: var(--text-white, #fff); }
+    .stat-value.good { color: var(--ok, #0f0); }
+    .stat-value.warn { color: var(--warn, #ff0); }
+    .stat-value.bad { color: var(--error, #f44); }
+    .panel {
+      background: var(--bg-card, #16213e);
+      border: 1px solid var(--border, #0f3460);
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent, #c8a882);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border, #0f3460); }
+    th { color: var(--text-secondary, #999); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
     td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    td.status-ok { color: var(--good); }
-    td.status-skip { color: var(--muted); }
-    td.status-fail { color: var(--bad); }
-    .bar { background: var(--border); border-radius: 3px; overflow: hidden; height: 6px; margin-top: 4px; }
-    .bar > div { height: 100%; background: var(--accent); }
-    .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
-    button { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-    button:hover { border-color: var(--accent); }
+    td.status-ok { color: var(--ok, #0f0); }
+    td.status-skip { color: var(--text-secondary, #999); }
+    td.status-fail { color: var(--error, #f44); }
+    .bar { background: var(--bg-accent, #0f3460); border-radius: 3px; overflow: hidden; height: 6px; margin-top: 4px; }
+    .bar > div { height: 100%; background: var(--accent, #c8a882); }
+    .note { font-size: 12px; color: var(--text-secondary, #999); margin-top: 8px; }
+    button {
+      background: var(--bg-accent, #0f3460);
+      border: 1px solid var(--border, #0f3460);
+      color: var(--text-primary, #eee);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    button:hover { border-color: var(--accent, #c8a882); color: var(--text-white, #fff); }
   </style>
 </head>
 <body>
   <h1>Agent run -- migration audit</h1>
-  <p class="lede">Synthetic demo. Run id <code>r-20260523-0231</code>. Generated by an agent and shipped as an HTML page rendered inside DOCI's sandboxed iframe.</p>
+  <p class="lede">Synthetic demo. Run id <code>r-20260523-0231</code>. Generated by an agent, rendered inside DOCI's sandboxed iframe, themed by DOCI's CSS variables.</p>
 
   <div class="stats">
     <div class="stat"><div class="stat-label">Files scanned</div><div class="stat-value">412</div></div>
@@ -66,11 +83,11 @@
     <table>
       <thead><tr><th>Migration</th><th>Severity</th><th>Note</th></tr></thead>
       <tbody>
-        <tr><td>0017_add_user_index</td><td class="status-ok">OK</td><td>Idempotent, no destructive ops</td></tr>
-        <tr><td>0019_split_orders_table</td><td class="status-fail">CRITICAL</td><td>Drops <code>orders.legacy_id</code> with no fallback; rollback path missing</td></tr>
-        <tr><td>0022_backfill_emails</td><td>warn</td><td>Touches 1.2M rows in single transaction; consider chunking</td></tr>
-        <tr><td>0023_add_audit_log</td><td class="status-ok">OK</td><td>New table only</td></tr>
-        <tr><td>0028_drop_old_sessions</td><td>warn</td><td>Drop without IF EXISTS -- will fail re-runs</td></tr>
+        <tr><td><code>0017_add_user_index</code></td><td class="status-ok">OK</td><td>Idempotent, no destructive ops</td></tr>
+        <tr><td><code>0019_split_orders_table</code></td><td class="status-fail">CRITICAL</td><td>Drops <code>orders.legacy_id</code> with no fallback; rollback path missing</td></tr>
+        <tr><td><code>0022_backfill_emails</code></td><td class="status-skip">warn</td><td>Touches 1.2M rows in single transaction; consider chunking</td></tr>
+        <tr><td><code>0023_add_audit_log</code></td><td class="status-ok">OK</td><td>New table only</td></tr>
+        <tr><td><code>0028_drop_old_sessions</code></td><td class="status-skip">warn</td><td>Drop without IF EXISTS -- will fail re-runs</td></tr>
       </tbody>
     </table>
   </div>

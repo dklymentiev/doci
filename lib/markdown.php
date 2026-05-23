@@ -129,6 +129,24 @@ function doci_is_html_document(string $content): bool {
  * @return string HTML fragment containing the iframe
  */
 function render_html_document(string $html): string {
+    // Inject DOCI theme stylesheets (absolute URL — the iframe runs in an
+    // opaque origin, so relative URLs would resolve against about:srcdoc).
+    // The browser fetches and applies the stylesheets even though the iframe
+    // can't read them via CSSOM. Documents that use DOCI theme variables
+    // (var(--bg-main), var(--text-primary), etc.) pick up the active theme.
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $baseUrl = htmlspecialchars($scheme . '://' . $host, ENT_QUOTES, 'UTF-8');
+    $themeLink = '<link rel="stylesheet" href="' . $baseUrl . '/assets/hq-theme.css">';
+
+    if (preg_match('#<head[^>]*>#i', $html)) {
+        $html = preg_replace('#(<head[^>]*>)#i', '$1' . $themeLink, $html, 1);
+    } elseif (preg_match('#<html[^>]*>#i', $html)) {
+        $html = preg_replace('#(<html[^>]*>)#i', '$1<head>' . $themeLink . '</head>', $html, 1);
+    } else {
+        $html = '<head>' . $themeLink . '</head>' . $html;
+    }
+
     $srcdoc = htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
     return '<iframe class="doci-html-doc"'
          . ' sandbox="allow-scripts allow-popups allow-forms allow-modals"'

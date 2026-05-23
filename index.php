@@ -179,15 +179,29 @@ $markdownFile = __DIR__ . '/files/' . $requestPath . '.md';
 $dirPath = __DIR__ . '/files/' . $requestPath;
 $htmlFile = __DIR__ . '/files/' . $requestPath . '.html';
 
-// Check if it's a raw HTML file - serve directly without DOCI wrapper
+// Check if it's an HTML file. Wrap it in the DOCI shell and render the
+// HTML inside a sandboxed iframe -- same mechanism used for .md files
+// whose content is a full HTML document. Pass ?raw=1 in the URL if you
+// need the file served untouched (e.g. to embed it from another tool).
 if (file_exists($htmlFile) && is_file($htmlFile)) {
     $filesDir = realpath(__DIR__ . '/files');
     $realHtmlPath = realpath($htmlFile);
 
     // Security check: ensure file is within /files/ directory
     if ($realHtmlPath !== false && strpos($realHtmlPath, $filesDir) === 0) {
-        header('Content-Type: text/html; charset=UTF-8');
-        readfile($htmlFile);
+        if (!empty($_GET['raw'])) {
+            header('Content-Type: text/html; charset=UTF-8');
+            readfile($htmlFile);
+            exit;
+        }
+
+        require_once __DIR__ . '/lib/markdown.php';
+        $htmlSource = file_get_contents($htmlFile);
+        $title = extract_title($htmlSource, basename($requestPath));
+        $htmlContent = render_html_document($htmlSource);
+
+        render_page($title, $htmlContent, $requestPath, false, null,
+            $documentHierarchy, $documentRecord);
         exit;
     }
 }

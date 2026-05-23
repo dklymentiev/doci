@@ -6,21 +6,27 @@
 
 In Notion or Confluence, the rendering is owned by the platform. You
 get blocks, you don't get an iframe with your own JavaScript. In DOCI
-you can drop an `.html` file next to your `.md` files and the system
-will render it as a full HTML page in a **sandboxed `<iframe>`**.
+you write a normal `.md` document whose CONTENT happens to start with
+`<!doctype html>` or `<html>` -- the renderer detects that, wraps the
+whole thing in a **sandboxed `<iframe srcdoc=...>`**, and shows it
+inside the regular DOCI shell with the sidebar still on the left and
+the breadcrumbs at the top.
 
-The sandbox omits `allow-same-origin`, so the embedded HTML cannot
-read DOCI's session, your cookies, or any data outside its own
-document. But it can run its own JavaScript, render charts, animate,
-or be a small interactive tool.
+The sandbox grants `allow-scripts allow-popups allow-forms allow-modals`
+and explicitly **omits** `allow-same-origin`, so the embedded HTML runs
+in an opaque origin: it cannot read DOCI's session cookie, the parent
+DOM, or anything outside its own document.
 
 ## Try it
 
-Open the demo: **[demo-dashboard.html](/tour/demo-dashboard.html)**
+Open the demo: **[demo-dashboard](/tour/demo-dashboard)**
 
-That file is in this same `tour/` folder, alongside this markdown
-document. The router detects the HTML doctype and wraps the file in
-the sandbox iframe instead of running it through Parsedown.
+That document is `files/tour/demo-dashboard.md` -- a plain markdown
+file in the same `tour/` folder as this page -- but its CONTENT is a
+full `<!DOCTYPE html>` page with inline CSS and JS. DOCI sees the HTML
+doctype, runs it through `render_html_document()` (in `lib/markdown.php`),
+and emits a sandboxed iframe. Title is extracted from the embedded
+`<title>` tag.
 
 ## Why this matters
 
@@ -50,10 +56,10 @@ roundtrip.
 
 ## Writing one
 
-It is just a file:
+It is just a markdown file with HTML content (note the `.md` extension):
 
 ```bash
-cat > files/projects/dashboard.html << 'EOF'
+cat > files/projects/dashboard.md << 'EOF'
 <!DOCTYPE html>
 <html>
 <head>
@@ -71,8 +77,18 @@ cat > files/projects/dashboard.html << 'EOF'
 EOF
 ```
 
-Then register it (or let `scripts/index-documents.php` find it on
-the next sweep) and it's a routable, sidebar-listed document like
-any other.
+Then register it (or let `scripts/index-documents.php` find it on the
+next sweep). It's now a routable, sidebar-listed document like any
+other markdown file -- but when opened, the page chrome stays the same
+and the HTML content renders interactively inside the iframe.
+
+## Two file conventions
+
+- **`.md` file with `<!doctype html>` content** -- wrapped in the DOCI
+  shell with the sidebar visible. Use this for "reports with light
+  interactivity" that should stay inside the navigation.
+- **`.html` file** -- served raw (full-screen, no DOCI chrome). Use
+  this only for things you want to load standalone, e.g. embedding in
+  an iframe from another tool, or full-screen dashboards.
 
 → Next: [Search and tags](/tour/05-search-and-tags)
