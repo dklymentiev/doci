@@ -39,3 +39,4 @@ files/inbox/*
 !files/inbox/.gitkeep
 !files/example/
 !files/docs/
+!files/tour/
