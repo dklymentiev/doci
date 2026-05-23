@@ -917,14 +917,9 @@ function render_recent_files(int $limit = 20): string {
 function render_search_page(string $query, string $folder = ''): string {
     $html = '<div class="search-page">' . "\n";
 
-    // Large search input at top
-    $html .= '<form method="GET" action="/search.html" class="search-page-form">' . "\n";
-    $html .= '  <input type="text" name="q" class="search-page-input" placeholder="Search documents..." value="' . htmlspecialchars($query) . '" autofocus>' . "\n";
-    if ($folder !== '') {
-        $html .= '  <input type="hidden" name="folder" value="' . htmlspecialchars($folder) . '">' . "\n";
-    }
-    $html .= '  <button type="submit" class="search-page-btn">Search</button>' . "\n";
-    $html .= '</form>' . "\n";
+    // The breadcrumbs bar at the top of every page already carries the
+    // search input (.search-bar-form) with the current query and the
+    // same submit target, so we don't render a second one here.
 
     // Show folder scope indicator
     if ($folder !== '') {
