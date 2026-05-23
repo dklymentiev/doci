@@ -10,7 +10,12 @@
 set -e
 
 FILES_DIR=/var/www/html/files
-DOMAIN="${DOCI_DOMAIN:-doci.local}"
+
+if [ -z "${DOCI_DOMAIN:-}" ]; then
+    echo "[doci-entrypoint] FATAL: DOCI_DOMAIN env var is required" >&2
+    exit 1
+fi
+DOMAIN="$DOCI_DOMAIN"
 
 if [ ! -d "$FILES_DIR" ]; then
     mkdir -p "$FILES_DIR"
@@ -65,7 +70,7 @@ export HOME=/var/www
         cd /var/www/html/files
         if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
             git add -A 2>/dev/null
-            git -c user.name=DOCI -c user.email="doci@${DOCI_DOMAIN:-doci.local}" \
+            git -c user.name=DOCI -c user.email="doci@$DOCI_DOMAIN" \
                 commit -q -m "Normalise internal links to GUID form" 2>/dev/null || true
         fi
         cd /

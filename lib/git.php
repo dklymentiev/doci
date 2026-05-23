@@ -51,8 +51,12 @@ function git_commit_and_push(string $path, string $message, string $author): arr
         $author = 'unknown';
     }
 
-    // Construct safe email
-    $domain = getenv('DOCI_DOMAIN') ?: 'doci.local';
+    // Construct safe email. DOCI_DOMAIN is required -- both compose files
+    // set it explicitly, no silent fallback to "doci.local".
+    $domain = getenv('DOCI_DOMAIN');
+    if (!$domain) {
+        return ['error' => 'DOCI_DOMAIN env var is required'];
+    }
     $email = $author . '@' . preg_replace('/[^a-zA-Z0-9.-]/', '', $domain);
 
     // Change to repo directory
