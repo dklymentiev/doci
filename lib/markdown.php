@@ -13,9 +13,53 @@
  * @return string HTML content
  */
 function parse_markdown(string $markdown): string {
+    // Extract {{embed: path/to.html [| height=320]}} shortcodes BEFORE
+    // Parsedown's safe-mode strips HTML. Replace each with a stable
+    // placeholder; after Parsedown runs, expand the placeholders into
+    // sandboxed iframes that share DOCI's theme (via render_html_document).
+    $embeds = [];
+    $markdown = preg_replace_callback(
+        '/\{\{embed:\s*([\w\-\.\/]+\.html)(?:\s*\|\s*height=(\d+))?\s*\}\}/',
+        function ($m) use (&$embeds) {
+            $token = 'DOCIEMBED' . count($embeds) . 'XX';
+            $embeds[$token] = ['path' => $m[1], 'height' => isset($m[2]) ? (int)$m[2] : 320];
+            return $token;
+        },
+        $markdown
+    );
+
     $parsedown = new ParsedownExtended();
     $parsedown->setSafeMode(true); // Escape HTML for security
     $html = $parsedown->text($markdown);
+
+    if (!empty($embeds)) {
+        foreach ($embeds as $token => $opts) {
+            $filePath = __DIR__ . '/../files/' . ltrim($opts['path'], '/');
+            if (file_exists($filePath) && is_file($filePath)) {
+                $real = realpath($filePath);
+                $filesRoot = realpath(__DIR__ . '/../files');
+                if ($real !== false && strpos($real, $filesRoot) === 0) {
+                    $rendered = render_html_document(file_get_contents($filePath));
+                    // render_html_document yields an iframe; tag it as an embed
+                    // and pin a height so it doesn't stretch like a full doc.
+                    $rendered = preg_replace(
+                        '#class="doci-html-doc"#',
+                        'class="doci-html-doc doci-embed" style="height:' . (int)$opts['height'] . 'px"',
+                        $rendered,
+                        1
+                    );
+                    $replacement = $rendered;
+                } else {
+                    $replacement = '<div class="doci-embed-error">Embed path outside files/: ' . htmlspecialchars($opts['path']) . '</div>';
+                }
+            } else {
+                $replacement = '<div class="doci-embed-error">Embed not found: ' . htmlspecialchars($opts['path']) . '</div>';
+            }
+            // Parsedown wraps lone tokens in <p>...</p>; handle both forms.
+            $html = str_replace('<p>' . $token . '</p>', $replacement, $html);
+            $html = str_replace($token, $replacement, $html);
+        }
+    }
 
     // Process footnotes [^N] and [^N]:
     $html = process_footnotes($html);

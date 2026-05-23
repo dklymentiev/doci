@@ -36,10 +36,15 @@ rather not need but always do.
 - **Grant deadline.** USDA Value-Added Producer grant proposal due
   Friday. See inbox.
 
+## At a glance
+
+{{embed: demo-farm/dashboards/yields-mini.html | height=260}}
+
 ## Dashboards
 
 - [Season 2026 yields](/demo-farm/dashboards/2026-season-yields.html)
-  -- per-crop running totals, updated weekly.
+  -- per-crop running totals, updated weekly. Full-page version of
+  the snapshot above.
 
 ## Compliance
 

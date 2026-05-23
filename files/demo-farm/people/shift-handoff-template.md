@@ -68,6 +68,7 @@ totals weekly on Friday.
 
 ---
 
+
 ## How to write a good handoff
 
 - **Be specific.** "Tractor sounds weird" is not a handoff. "T-01

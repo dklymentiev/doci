@@ -1026,3 +1026,7 @@ a:visited { color: var(--accent); }
     background: #fff;
 }
 
+
+/* Inline HTML embed inside markdown (via {{embed:}} shortcode) */
+.doci-html-doc.doci-embed { width: 100%; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-card); margin: 12px 0; }
+.doci-embed-error { padding: 12px 16px; border: 1px dashed var(--error); border-radius: 4px; color: var(--error); font-size: 13px; }

@@ -372,7 +372,11 @@
             if (!href) return;
 
             if (href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:')) return;
-            if (!href.endsWith('.html')) return;
+            if (!href.startsWith('/')) return;
+            // Skip static asset paths and known binary types -- let the browser
+            // handle those natively (download or open in tab).
+            if (/^\/(assets|files\/\.data|api)\//.test(href)) return;
+            if (/\.(pdf|zip|tar|gz|png|jpe?g|gif|svg|webp|ico|mp4|mp3|wav|woff2?|ttf|css|js|json|xml)(\?|#|$)/i.test(href)) return;
             if (e.ctrlKey || e.metaKey || e.shiftKey) return;
 
             e.preventDefault();

@@ -200,7 +200,7 @@ if (file_exists($htmlFile) && is_file($htmlFile)) {
         $title = extract_title($htmlSource, basename($requestPath));
         $htmlContent = render_html_document($htmlSource);
 
-        render_page($title, $htmlContent, $requestPath, false, null,
+        render_page($title, $htmlContent, $requestPath, true, null,
             $documentHierarchy, $documentRecord);
         exit;
     }
@@ -236,8 +236,33 @@ if (is_dir($dirPath)) {
         exit;
     }
 
+    // If the folder has an index.md, render it above the folder/file cards
+    // so the directory page can carry an introduction, KPI tiles, embedded
+    // dashboards, etc.
+    $folderIndexMd = $dirPath . '/index.md';
+    $folderIntroHtml = '';
+    if (file_exists($folderIndexMd) && is_file($folderIndexMd)) {
+        $realIndex = realpath($folderIndexMd);
+        if ($realIndex !== false && strpos($realIndex, $filesDir) === 0) {
+            require_once __DIR__ . '/lib/markdown.php';
+            $folderIndexContent = file_get_contents($folderIndexMd);
+            if (doci_is_html_document($folderIndexContent)) {
+                $folderIntroHtml = render_html_document($folderIndexContent);
+            } else {
+                $folderIntroHtml = parse_markdown($folderIndexContent);
+            }
+            $folderIntroHtml = '<article class="markdown-content markdown-body">'
+                . $folderIntroHtml . '</article>';
+            // Use the doc's title from the first H1, if present.
+            $maybeTitle = extract_title($folderIndexContent, $dirTitle);
+            if ($maybeTitle && $maybeTitle !== $dirTitle) {
+                $dirTitle = $maybeTitle;
+            }
+        }
+    }
+
     // Add folder search bar for non-root directories
-    $htmlContent = '';
+    $htmlContent = $folderIntroHtml;
     if ($requestPath !== 'index') {
         // Get top-level folder for tag-based search
         $folderParts = explode('/', $requestPath);

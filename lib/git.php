@@ -7,18 +7,17 @@
 
 require_once __DIR__ . '/../config.php';
 
-// Git configuration
-// GIT_REPO_ROOT is the git repository root (where .git is)
-// GIT_FILES_PATH is where content files are stored
+// Git configuration. The content repo is /var/www/html/files (initialised
+// by docker-entrypoint.sh on first start). All operations are relative to
+// that working tree -- no parent app repo, no files/ prefix.
 if (!defined('GIT_REPO_ROOT')) {
-    define('GIT_REPO_ROOT', __DIR__ . '/..');
+    define('GIT_REPO_ROOT', __DIR__ . '/../files');
 }
 if (!defined('GIT_REPO_PATH')) {
     define('GIT_REPO_PATH', __DIR__ . '/../files');
 }
-// Prefix for file paths in git (relative to repo root)
 if (!defined('GIT_FILES_PREFIX')) {
-    define('GIT_FILES_PREFIX', 'files/');
+    define('GIT_FILES_PREFIX', '');
 }
 
 /**

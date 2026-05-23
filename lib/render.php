@@ -234,13 +234,21 @@ function render_page(string $title, string $content, string $path, bool $showRec
                 <?php
                 $commits = git_get_file_history($path . '.md', 3);
                 $commitUrlBase = git_get_commit_url_base();
-                if (!empty($commits) && $commitUrlBase):
+                if (!empty($commits)):
                 ?>
                 <span class="meta-sep">|</span>
                 <span class="meta-item"><span class="meta-label">History:</span>
                 <?php
                 $commitLinks = array_map(function($c) use ($commitUrlBase) {
-                    return '<a href="' . htmlspecialchars($commitUrlBase . '/' . $c['hash']) . '" target="_blank" title="' . htmlspecialchars($c['message'] . ' by ' . $c['author'] . ' ' . $c['date']) . '">' . htmlspecialchars($c['hash']) . '</a>';
+                    $title = $c['message'] . ' -- ' . $c['author'] . ' (' . $c['date'] . ')';
+                    $title = htmlspecialchars($title);
+                    $hash = htmlspecialchars($c['hash']);
+                    if ($commitUrlBase) {
+                        return '<a href="' . htmlspecialchars($commitUrlBase . '/' . $c['hash']) . '" target="_blank" title="' . $title . '">' . $hash . '</a>';
+                    }
+                    // No remote configured -- show the hash as a tooltipped span
+                    // instead of dropping the whole History block.
+                    return '<span class="commit-hash" title="' . $title . '">' . $hash . '</span>';
                 }, $commits);
                 echo implode(', ', $commitLinks);
                 ?>

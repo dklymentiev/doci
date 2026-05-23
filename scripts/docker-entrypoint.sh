@@ -29,6 +29,17 @@ if [ ! -d "$FILES_DIR/.git" ]; then
     fi
     chown -R www-data:www-data .git
     cd /
+else
+    # Existing repo. Pick up any seed content added between starts (host
+    # bind-mounted new files into files/ since last container run, etc.)
+    # so 'History:' actually reflects the file state.
+    cd "$FILES_DIR"
+    if ! git diff --quiet HEAD 2>/dev/null || [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+        git add -A 2>/dev/null || true
+        git -c user.name=DOCI -c user.email="doci@$DOMAIN" \
+            commit -q -m "Sync seed content on container start" 2>/dev/null || true
+    fi
+    cd /
 fi
 
 # Apache (and the PHP code) runs as www-data, but the user's HOME isn't
