@@ -1,6 +1,6 @@
 # Inbox: quick capture
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## The idea
 
@@ -83,4 +83,4 @@ This:
 - End of week, you sweep the inbox: delete junk, promote the
   promising items into a folder, leave the maybes parked.
 
-→ Next: [HTML pages](/tour/04-html-pages)
+→ Next: [HTML pages](/fcb3f953-5cc1-4c4c-b7e5-2a83af84d398)

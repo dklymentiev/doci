@@ -1,6 +1,6 @@
 # Navigation tour
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 The small things you'll use without thinking about them once you know
 they're there.
@@ -81,4 +81,4 @@ markdown source in an inline textarea; Save commits the change to git
 and reloads. Delete soft-deletes the document and redirects to the
 parent folder.
 
-→ Next: [MCP, API and CLI](/tour/07-mcp-api-cli)
+→ Next: [MCP, API and CLI](/680b6a99-6171-4858-9d6c-2a70668b3642)

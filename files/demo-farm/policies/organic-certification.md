@@ -19,7 +19,7 @@ and `policies/source/nofa-ny-standards-2025.pdf`.
   synthetic pesticides, GMO seed. Any input must be on the OMRI
   list OR be specifically approved by NOFA-NY in writing.
 - **Documented crop rotation** -- ours is in
-  [crops/rotation-schedule](/demo-farm/crops/rotation-schedule). Minimum
+  [crops/rotation-schedule](/89416d7d-940e-4d04-94e2-0f9be1dd09b1). Minimum
   3-year rotation between same-family crops; we run 4.
 - **Buffer zones** -- 25 feet from any conventional neighbor's
   field. We have one such border (Ranney's, west side of North-A);
@@ -35,7 +35,7 @@ and `policies/source/nofa-ny-standards-2025.pdf`.
 - **Organic feed only** -- since 12 months before first milk shipment.
   All cows in the herd are bought organic-from-birth or transitioned
   with documented 12-month feed history. See
-  [feed suppliers](/demo-farm/livestock/feed-suppliers).
+  [feed suppliers](/dc003350-f249-48f5-8a5c-372a85c1f7c0).
 - **Pasture rule** -- minimum 120 days/year on pasture, minimum
   30% dry matter intake from pasture during grazing season. We
   track DMI roughly through milk yield drop on rainy weeks (rough

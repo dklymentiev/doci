@@ -21,23 +21,23 @@ HTML rendering, search -- is in service of that single loop.
 
 ## Tour stops
 
-1. **[Documents and editing](/tour/01-documents-and-editing)** -- the
+1. **[Documents and editing](/f025c47a-958c-4974-9761-cc59e57e5dbe)** -- the
    fundamentals: stable GUID, paths, edit-in-browser, git commit
-2. **[Threads and versions](/tour/02-threads-and-versions)** -- starting
+2. **[Threads and versions](/44b17894-0530-4433-b1f3-2908c5a59c4e)** -- starting
    a discussion on a quote, automatic snapshots, navigating history
-3. **[Inbox capture](/tour/03-inbox)** -- dump a thought, promote it
+3. **[Inbox capture](/260aaad0-2e9c-416d-b2ed-4c9b2e0ef691)** -- dump a thought, promote it
    into a proper document later
-4. **[HTML pages](/tour/04-html-pages)** -- live HTML next to markdown
+4. **[HTML pages](/fcb3f953-5cc1-4c4c-b7e5-2a83af84d398)** -- live HTML next to markdown
    in the same folder, rendered in a sandboxed iframe
-5. **[Search and tags](/tour/05-search-and-tags)** -- title/tag search,
+5. **[Search and tags](/2852caac-13a6-45c0-b758-520c943b063c)** -- title/tag search,
    folder-scoped, optional semantic search via mesh-memory
-6. **[Navigation tour](/tour/06-navigation)** -- breadcrumbs, GUID copy,
+6. **[Navigation tour](/a34e6b54-38fb-4c55-b75d-da09c148a561)** -- breadcrumbs, GUID copy,
    recent files, theme toggle, sidebar tree state, header anchors
-7. **[MCP, API and CLI](/tour/07-mcp-api-cli)** -- one operation, four
+7. **[MCP, API and CLI](/680b6a99-6171-4858-9d6c-2a70668b3642)** -- one operation, four
    ways to call it
-8. **[Deployment](/tour/08-deployment)** -- local, VPN-private, public
-9. **[Versioning and backup](/tour/09-versioning-and-backup)** -- git
+8. **[Deployment](/3d2a42b7-bf8e-4466-b97d-5ff57d892b47)** -- local, VPN-private, public
+9. **[Versioning and backup](/f4693b25-1a07-45b7-946b-817e1fef689e)** -- git
    is already on, here's how to mirror it and back up Postgres
-10. **[Next steps](/tour/10-next-steps)** -- reset demo data, customize
+10. **[Next steps](/891ae16e-c5d3-4e60-9106-bf617a5a958e)** -- reset demo data, customize
 
-→ Continue: [Documents and editing](/tour/01-documents-and-editing)
+→ Continue: [Documents and editing](/f025c47a-958c-4974-9761-cc59e57e5dbe)

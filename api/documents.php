@@ -134,6 +134,10 @@ function handleCreate($pdo) {
         doci_log('documents.create.mkdir', ['dir' => $dirPath]);
     }
 
+    // Normalise internal path links to GUID URLs before persisting.
+    require_once __DIR__ . '/../lib/markdown.php';
+    $content = rewrite_md_links_to_guids($content);
+
     // Write file
     if (file_put_contents($filePath, $content) === false) {
         throw new Exception('Failed to write file');
@@ -295,6 +299,8 @@ function handleUpdate($pdo) {
     // Update file content if provided
     if ($content !== null) {
         $filePath = __DIR__ . '/../files/' . $doc['path'];
+        require_once __DIR__ . '/../lib/markdown.php';
+        $content = rewrite_md_links_to_guids($content);
         if (file_put_contents($filePath, $content) === false) {
             throw new Exception('Failed to write file');
         }

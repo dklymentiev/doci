@@ -21,7 +21,7 @@ nothing is wrong, 90+ if something is.
 
 - [ ] Weather check: NWS 24h forecast, frost watch in shoulder
       seasons, blight humidity readings May-September. See
-      [Blight watch](/demo-farm/crops/blight-watch-may) for current
+      [Blight watch](/04f5c1ff-fbe9-4125-b7f1-d5364f6b3a70) for current
       thresholds.
 - [ ] Walk the four fields in rotation order. Look for: deer
       pressure, irrigation pooling/dry spots, lodged plants.
@@ -29,13 +29,13 @@ nothing is wrong, 90+ if something is.
       frost.
 - [ ] Irrigation pressure check at North-A drip header. Should read
       28-32 psi at the pump (see
-      [pump failure post-mortem](/demo-farm/incidents/2026-04-12-irrigation-pump-failure)
+      [pump failure post-mortem](/e462d6f3-8bb0-4589-9f35-124d1a20768b)
       for why this is now on the checklist).
 - [ ] CSA harvest priority list update on the whiteboard.
 
 ## Shared
 
-- [ ] Read the previous shift's [handoff note](/demo-farm/people/shift-handoff-template).
+- [ ] Read the previous shift's [handoff note](/1931e3a5-d731-43e7-83bf-e720f7314a7d).
       Acknowledge or escalate any pending items.
 - [ ] Phone notifications: anything from suppliers, USDA, NOFA-NY,
       buyers? Skim, flag, defer.

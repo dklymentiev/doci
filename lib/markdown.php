@@ -101,6 +101,11 @@ function parse_markdown(string $markdown): string {
         $html
     );
 
+    // Rewrite internal path links to stable GUID links: links survive
+    // file renames and folder moves. Markdown authors keep writing
+    // human-readable paths; the rendered href is /<guid>.
+    $html = rewrite_links_to_guids($html);
+
     return $html;
 }
 
@@ -216,6 +221,175 @@ function render_html_document(string $html): string {
          . ' referrerpolicy="no-referrer"'
          . ' srcdoc="' . $srcdoc . '"'
          . ' title="HTML document"></iframe>';
+}
+
+/**
+ * Rewrite internal path links inside markdown SOURCE to stable GUID links.
+ *
+ * Called on every save (UI, REST, CLI, MCP) so the file on disk only
+ * ever contains GUID links. Authors and agents can write either form
+ * (`[Inbox](/tour/03-inbox)` or `[Inbox](/<guid>)`); the controller
+ * normalises to the second. After a rename or move, the GUID still
+ * resolves -- the entire reason GUIDs exist as identifiers.
+ *
+ * Handles inline `[text](url)` and reference `[label]: url` syntaxes.
+ * Leaves untouched: external URLs, anchors (#x), static paths
+ * (/assets/, /api/), paths that don't resolve to a document.
+ *
+ * @param string $markdown
+ * @return string
+ */
+function rewrite_md_links_to_guids(string $markdown): string {
+    if (!function_exists('get_db')) {
+        return $markdown;
+    }
+
+    // Inline: [text](url) or [text](url "title")
+    $markdown = preg_replace_callback(
+        '/\[([^\]\n]+)\]\(\s*([^)\s]+)(\s+"[^"]*")?\s*\)/',
+        function ($m) {
+            $newUrl = path_to_guid_url($m[2]);
+            return '[' . $m[1] . '](' . $newUrl . ($m[3] ?? '') . ')';
+        },
+        $markdown
+    );
+
+    // Reference: [label]: url  (line-anchored)
+    $markdown = preg_replace_callback(
+        '/^(\s{0,3}\[[^\]\n]+\]:\s+)(\S+)/m',
+        function ($m) {
+            return $m[1] . path_to_guid_url($m[2]);
+        },
+        $markdown
+    );
+
+    return $markdown;
+}
+
+/**
+ * Resolve a single URL string from `/some/path` to `/<guid>` if it
+ * matches a known document; otherwise return it unchanged.
+ *
+ * @param string $url
+ * @return string
+ */
+function path_to_guid_url(string $url): string {
+    if ($url === '' || $url[0] !== '/') return $url;
+    if (preg_match('#^/(assets|api|files/\.data)/#', $url)) return $url;
+    // Already a GUID URL? leave alone.
+    if (preg_match('#^/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(/|$|\?|\#)#', $url)) return $url;
+
+    $path = $url; $tail = '';
+    if (($pos = strpos($path, '#')) !== false) { $tail = substr($path, $pos) . $tail; $path = substr($path, 0, $pos); }
+    if (($pos = strpos($path, '?')) !== false) { $tail = substr($path, $pos) . $tail; $path = substr($path, 0, $pos); }
+    $clean = preg_replace('/\.html$/', '', rtrim($path, '/'));
+    $key = ltrim($clean, '/');
+    if ($key === '' || $key === 'index') return $url;
+
+    try {
+        $pdo = get_db();
+        $stmt = $pdo->prepare("SELECT path, guid FROM documents WHERE path IN (?, ?) AND deleted_at IS NULL LIMIT 2");
+        $stmt->execute([$key . '.md', $key . '/index.md']);
+        $found = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Prefer exact .md match over folder/index.md
+        foreach ([$key . '.md', $key . '/index.md'] as $candidate) {
+            foreach ($found as $row) {
+                if ($row['path'] === $candidate) {
+                    return '/' . $row['guid'] . $tail;
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        // DB unavailable -- keep original
+    }
+    return $url;
+}
+
+/**
+ * Resolve internal path links in a rendered HTML fragment to GUID links.
+ *
+ * Markdown like `[Inbox](/tour/03-inbox)` renders to
+ * `<a href="/tour/03-inbox">Inbox</a>`. After this rewrite, the href
+ * becomes `/<guid>` -- so when the underlying file is moved or
+ * renamed, the link keeps resolving. The link TEXT is untouched, only
+ * the destination URL changes.
+ *
+ * One DB query per render (batched IN-clause), then string-replace.
+ *
+ * Skipped:
+ *  - external URLs (http://, https://, mailto:)
+ *  - in-page anchors (#section)
+ *  - static asset paths (/assets/, /api/)
+ *  - paths that do not resolve to a document in the table
+ *
+ * @param string $html
+ * @return string
+ */
+function rewrite_links_to_guids(string $html): string {
+    if (!function_exists('get_db')) {
+        return $html;
+    }
+
+    // Helper: peel off query + fragment and trailing .html, return the
+    // candidate documents.path keys ("foo/bar.md" and "foo/bar/index.md").
+    $candidates = [];
+    if (!preg_match_all('#<a\b[^>]*?href="([^"]+)"#', $html, $matches)) {
+        return $html;
+    }
+    foreach ($matches[1] as $href) {
+        if ($href === '' || $href[0] !== '/') continue;
+        if (preg_match('#^/(assets|api|files/\.data)/#', $href)) continue;
+        $pathPart = $href;
+        if (($pos = strpos($pathPart, '#')) !== false) $pathPart = substr($pathPart, 0, $pos);
+        if (($pos = strpos($pathPart, '?')) !== false) $pathPart = substr($pathPart, 0, $pos);
+        $pathPart = preg_replace('/\.html$/', '', rtrim($pathPart, '/'));
+        $pathPart = ltrim($pathPart, '/');
+        if ($pathPart === '' || $pathPart === 'index') continue;
+        $candidates[] = $pathPart . '.md';
+        $candidates[] = $pathPart . '/index.md';   // folder-link fallback
+    }
+    if (empty($candidates)) return $html;
+    $candidates = array_values(array_unique($candidates));
+
+    try {
+        $pdo = get_db();
+        $ph = implode(',', array_fill(0, count($candidates), '?'));
+        $stmt = $pdo->prepare("SELECT path, guid FROM documents WHERE path IN ($ph) AND deleted_at IS NULL");
+        $stmt->execute($candidates);
+        $map = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $map[$row['path']] = $row['guid'];
+        }
+    } catch (Throwable $e) {
+        return $html;
+    }
+    if (empty($map)) return $html;
+
+    return preg_replace_callback(
+        '#(<a\b[^>]*?href=")([^"]+)(")#',
+        function ($m) use ($map) {
+            $href = $m[2];
+            if ($href === '' || $href[0] !== '/') return $m[0];
+            if (preg_match('#^/(assets|api|files/\.data)/#', $href)) return $m[0];
+            // Split path | query | fragment
+            $path = $href; $tail = '';
+            if (($pos = strpos($path, '#')) !== false) { $tail = substr($path, $pos) . $tail; $path = substr($path, 0, $pos); }
+            if (($pos = strpos($path, '?')) !== false) { $tail = substr($path, $pos) . $tail; $path = substr($path, 0, $pos); }
+            $clean = preg_replace('/\.html$/', '', rtrim($path, '/'));
+            $key = ltrim($clean, '/');
+            if ($key === '' || $key === 'index') return $m[0];
+            $candidate = $key . '.md';
+            $folderCandidate = $key . '/index.md';
+            if (isset($map[$candidate])) {
+                return $m[1] . '/' . $map[$candidate] . $tail . $m[3];
+            }
+            if (isset($map[$folderCandidate])) {
+                return $m[1] . '/' . $map[$folderCandidate] . $tail . $m[3];
+            }
+            return $m[0];
+        },
+        $html
+    );
 }
 
 /**

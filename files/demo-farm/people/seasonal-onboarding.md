@@ -76,7 +76,7 @@ leave them solo on day one even for "easy" tasks.
 
 - Pair work continues for at least 3 days.
 - Solo tasks only after explicit sign-off (Sarah or Mike).
-- End-of-day handoff using the [shift handoff template](/demo-farm/people/shift-handoff-template).
+- End-of-day handoff using the [shift handoff template](/1931e3a5-d731-43e7-83bf-e720f7314a7d).
 - Friday end-of-week 15-minute conversation: any concerns,
   feedback on the work, schedule for next week.
 

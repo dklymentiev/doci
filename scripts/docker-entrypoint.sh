@@ -58,6 +58,18 @@ export HOME=/var/www
     if [ -f /var/www/html/scripts/index-documents.php ]; then
         php /var/www/html/scripts/index-documents.php 2>&1 | tail -20 || true
     fi
+    # After indexing every file has a DB row -- rewrite seeded markdown
+    # so internal links become stable GUID links on disk.
+    if [ -f /var/www/html/scripts/normalize-links.php ]; then
+        php /var/www/html/scripts/normalize-links.php 2>&1 | tail -10 || true
+        cd /var/www/html/files
+        if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+            git add -A 2>/dev/null
+            git -c user.name=DOCI -c user.email="doci@${DOCI_DOMAIN:-doci.local}" \
+                commit -q -m "Normalise internal links to GUID form" 2>/dev/null || true
+        fi
+        cd /
+    fi
 ) &
 
 exec docker-php-entrypoint "$@"

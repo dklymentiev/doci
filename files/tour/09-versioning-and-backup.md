@@ -1,6 +1,6 @@
 # Versioning and backup
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## Versioning is already on
 
@@ -122,4 +122,4 @@ For anything past a local sandbox:
   test. Spin up a fresh stack from a backup volume + the Postgres
   dump, confirm a document opens and history is intact.
 
-→ Next: [Next steps](/tour/10-next-steps)
+→ Next: [Next steps](/891ae16e-c5d3-4e60-9106-bf617a5a958e)

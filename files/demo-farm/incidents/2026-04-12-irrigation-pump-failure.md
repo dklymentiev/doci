@@ -54,10 +54,10 @@ intermittent and not noticeable under load.
 ## What we changed
 
 - Added daily pressure check at North-A drip header to the
-  [morning checklist](/demo-farm/operations/daily-morning-checklist),
+  [morning checklist](/9d988b73-5cb5-41a0-8156-04025931bb43),
   running May–September.
 - Added 30-day post-install inspection for the new pump (June 1,
-  2026) to the [equipment log](/demo-farm/operations/equipment-maintenance-log).
+  2026) to the [equipment log](/a2ffac6c-7506-4ec3-8a73-e896d1e65424).
 - New rule: ANY whine or grind from any pump, fan, or motor is a
   log entry in the handoff, even if it goes away. We caught the
   August 2025 whine and dismissed it. We won't dismiss the next one.

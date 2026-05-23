@@ -1,6 +1,6 @@
 # Next steps
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 You finished the tour. Quick mental check -- you should now be able to
 answer:
@@ -30,7 +30,7 @@ answer:
 This is the unlock. Pick the agent you already use:
 
 - **Claude Code / Claude Desktop:** add `mcp_server.py` to your MCP
-  config (see [the MCP tour stop](/tour/07-mcp-api-cli)). The agent
+  config (see [the MCP tour stop](/680b6a99-6171-4858-9d6c-2a70668b3642)). The agent
   immediately has 12+ tools for reading and writing.
 - **Custom scripts:** point them at the REST API with an `X-API-Key`
   header. Anything that can `curl` can drive DOCI.
@@ -74,13 +74,13 @@ Or just leave them -- they're small and don't cost anything.
 ## Where to read more
 
 - [README.md](https://github.com/dklymentiev/doci) -- repo-level docs
-- [Vision](/docs/01-vision) -- the design intent
-- [Functional spec](/docs/02-spec) -- every endpoint and field
-- [Architecture](/docs/03-architecture) -- how the pieces fit
-- [Data dictionary](/docs/data-dictionary) -- the schema
+- [Vision](/e8195706-42c9-4999-b76b-4390981720cd) -- the design intent
+- [Functional spec](/08f2881b-9364-4a12-943b-d6b6efdbc739) -- every endpoint and field
+- [Architecture](/4797f573-44fe-4b45-92d7-0c13cdea4a2b) -- how the pieces fit
+- [Data dictionary](/893b6c30-be03-431c-bdaf-d0d995b215f0) -- the schema
 
 ## Where to report issues
 
 [github.com/dklymentiev/doci/issues](https://github.com/dklymentiev/doci/issues)
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)

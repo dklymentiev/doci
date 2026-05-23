@@ -70,6 +70,11 @@ if (!file_exists($localPath)) {
     json_not_found('File not found');
 }
 
+// Normalise internal path links to GUID URLs before persisting, so
+// links survive future renames and folder moves.
+require_once __DIR__ . '/lib/markdown.php';
+$content = rewrite_md_links_to_guids($content);
+
 // Write file
 if (file_put_contents($localPath, $content) === false) {
     doci_log('save.error', ['error' => 'Failed to write file', 'path' => $path], 'ERROR');

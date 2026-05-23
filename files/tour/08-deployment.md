@@ -1,6 +1,6 @@
 # Deployment
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## Mode 1 -- local dev
 
@@ -101,4 +101,4 @@ Postgres is metadata; rebuild from scratch with
 summaries / explicit titles. So back it up too -- `pg_dump doci` to
 a daily file.
 
-→ Next: [Versioning and backup](/tour/09-versioning-and-backup)
+→ Next: [Versioning and backup](/f4693b25-1a07-45b7-946b-817e1fef689e)

@@ -1,6 +1,6 @@
 # Search and tags
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## Built-in: title, path, tags
 
@@ -67,4 +67,4 @@ search keeps working.
 Both are queryable from agents via MCP, so the agent's search
 behavior matches yours.
 
-→ Next: [Navigation tour](/tour/06-navigation)
+→ Next: [Navigation tour](/a34e6b54-38fb-4c55-b75d-da09c148a561)

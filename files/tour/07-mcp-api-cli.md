@@ -1,6 +1,6 @@
 # MCP, API and CLI
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## One operation, four ways
 
@@ -112,4 +112,4 @@ take it from here" -- and you take over in the UI without any
 translation step. And vice versa: you start writing, the agent picks
 up where you left off, no API mismatch.
 
-→ Next: [Deployment](/tour/08-deployment)
+→ Next: [Deployment](/3d2a42b7-bf8e-4466-b97d-5ff57d892b47)

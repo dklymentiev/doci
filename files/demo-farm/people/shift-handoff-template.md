@@ -29,7 +29,7 @@ Mark each item with severity:
 - 🔴 action required (don't start the day without addressing)
 
 Example:
-- 🔴 North-A drip header read 22 psi at 6pm (down from 30 psi). Check pump first thing. See [pump post-mortem](/demo-farm/incidents/2026-04-12-irrigation-pump-failure).
+- 🔴 North-A drip header read 22 psi at 6pm (down from 30 psi). Check pump first thing. See [pump post-mortem](/e462d6f3-8bb0-4589-9f35-124d1a20768b).
 - 🟡 Bramble (102) left rear teat looked tight -- watch tomorrow's milking, sample if not better.
 - 🟢 Restock dish soap in packing shed.
 

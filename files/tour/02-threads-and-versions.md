@@ -1,6 +1,6 @@
 # Threads and versions
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## The model
 
@@ -92,4 +92,4 @@ Or the MCP tool `doci_versions(document_guid=...)`.
   up with" (current). Click between version chips, see the diff
   visually, run `git diff` for the byte-exact view.
 
-→ Next: [Inbox capture](/tour/03-inbox)
+→ Next: [Inbox capture](/260aaad0-2e9c-416d-b2ed-4c9b2e0ef691)

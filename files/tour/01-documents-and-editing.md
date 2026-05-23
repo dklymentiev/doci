@@ -1,6 +1,6 @@
 # Documents and editing
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## A document is two things
 
@@ -61,4 +61,4 @@ Documents are markdown files. There is no rich-text editor, no blocks,
 no real-time multiplayer cursors. If two people edit the same file,
 last writer wins -- merges resolve in git, not in the UI.
 
-→ Next: [Threads and versions](/tour/02-threads-and-versions)
+→ Next: [Threads and versions](/44b17894-0530-4433-b1f3-2908c5a59c4e)

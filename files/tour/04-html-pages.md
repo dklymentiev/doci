@@ -1,6 +1,6 @@
 # HTML pages next to markdown
 
-← [Tour index](/tour/00-start-here)
+← [Tour index](/06a1f168-84b3-4461-b7a3-3bea4164c77a)
 
 ## What's unusual
 
@@ -91,4 +91,4 @@ and the HTML content renders interactively inside the iframe.
   this only for things you want to load standalone, e.g. embedding in
   an iframe from another tool, or full-screen dashboards.
 
-→ Next: [Search and tags](/tour/05-search-and-tags)
+→ Next: [Search and tags](/2852caac-13a6-45c0-b758-520c943b063c)

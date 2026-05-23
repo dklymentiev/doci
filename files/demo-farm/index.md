@@ -19,20 +19,20 @@ Everything that is "how do we do X" lives here. Daily routines,
 emergency procedures, supplier contacts, the post-mortems we'd
 rather not need but always do.
 
-- New on the team? Start with [Seasonal onboarding](/demo-farm/people/seasonal-onboarding).
-- Taking over a shift? [Shift handoff template](/demo-farm/people/shift-handoff-template).
+- New on the team? Start with [Seasonal onboarding](/c4476c73-5e2f-4ffd-952c-03d61294df31).
+- Taking over a shift? [Shift handoff template](/1931e3a5-d731-43e7-83bf-e720f7314a7d).
 - Something just broke? Check [Incidents](/demo-farm/incidents) for similar past events
   before reinventing the response.
-- Looking for a supplier we trust? [Feed suppliers](/demo-farm/livestock/feed-suppliers).
+- Looking for a supplier we trust? [Feed suppliers](/dc003350-f249-48f5-8a5c-372a85c1f7c0).
 
 ## Active this week
 
-- **Blight watch.** [Blight watch -- May 2026](/demo-farm/crops/blight-watch-may)
+- **Blight watch.** [Blight watch -- May 2026](/04f5c1ff-fbe9-4125-b7f1-d5364f6b3a70)
   -- mid-month rain forecast pushed us up to alert level. Daily field
   inspection until conditions clear.
-- **Pump replacement.** [Post-mortem on the April 12 pump failure](/demo-farm/incidents/2026-04-12-irrigation-pump-failure)
+- **Pump replacement.** [Post-mortem on the April 12 pump failure](/e462d6f3-8bb0-4589-9f35-124d1a20768b)
   -- replacement installed April 14. Pre-season pressure-test routine
-  added to [equipment log](/demo-farm/operations/equipment-maintenance-log).
+  added to [equipment log](/a2ffac6c-7506-4ec3-8a73-e896d1e65424).
 - **Grant deadline.** USDA Value-Added Producer grant proposal due
   Friday. See inbox.
 
@@ -48,5 +48,5 @@ rather not need but always do.
 
 ## Compliance
 
-- [Organic certification policy](/demo-farm/policies/organic-certification)
+- [Organic certification policy](/0e3e41e7-f7ad-40e3-84eb-314568150732)
   -- what we have to do and document to keep the cert.

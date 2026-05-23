@@ -38,9 +38,9 @@ Ithaca Farmers' Market + small wholesale to Greenstar Co-op.
 ## Risks
 
 - **Late blight.** Tomato + potato exposure on North-A. Mitigation
-  in [Blight watch](/demo-farm/crops/blight-watch-may).
+  in [Blight watch](/04f5c1ff-fbe9-4125-b7f1-d5364f6b3a70).
 - **Labor.** Need 4 seasonal hands by June 1. Two confirmed, two open.
-  See [Seasonal onboarding](/demo-farm/people/seasonal-onboarding) for
+  See [Seasonal onboarding](/c4476c73-5e2f-4ffd-952c-03d61294df31) for
   contracts and orientation flow.
 - **Irrigation.** North-A drip line from the new pump (post-April-12
   replacement) is under-tested at scale. Run a full-pressure soak
