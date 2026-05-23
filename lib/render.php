@@ -199,8 +199,13 @@ function render_page(string $title, string $content, string $path, bool $showRec
                 <?= $fileTree ?>
             </nav>
             <div class="sidebar-section" style="margin-top:auto;padding-top:15px;border-top:1px solid var(--border);">
+                <?php $authConfigured = defined('AUTH_URL') && AUTH_URL !== ''; ?>
+                <?php if ($authConfigured): ?>
                 <a href="<?= AUTH_URL ?>/?page=settings" class="nav-item"><span class="nav-icon">USR</span><?= htmlspecialchars($username) ?></a>
                 <a href="<?= htmlspecialchars($logoutUrl) ?>" class="nav-item"><span class="nav-icon">OUT</span>Logout</a>
+                <?php else: ?>
+                <div class="nav-item nav-item-static"><span class="nav-icon">USR</span><?= htmlspecialchars($username) ?></div>
+                <?php endif; ?>
             </div>
         </aside>
 

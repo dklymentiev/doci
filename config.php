@@ -36,7 +36,7 @@ define('AI_GATEWAY_URL', getenv('AI_GATEWAY_URL') ?: 'https://ai.example.com/api
 
 // Application URLs (configurable for different deployments)
 define('APP_URL', getenv('APP_URL') ?: 'https://doci.example.com');
-define('AUTH_URL', getenv('AUTH_URL') ?: 'https://auth.example.com');
+define('AUTH_URL', getenv('AUTH_URL') ?: '');
 define('EXTERNAL_SCRIPTS_URL', getenv('EXTERNAL_SCRIPTS_URL') ?: ''); // Empty = local scripts
 
 /**
