@@ -155,7 +155,7 @@ escalate to a full incident.
 | `DOCI_ENV` | no | `production` | `development` is the only value that allows `DOCI_DEV_AUTO_AUTH=true` to take effect |
 | `DOCI_DEV_AUTO_AUTH` | no | `false` | `true` auto-authenticates browser requests as `dev`; requires `DOCI_ENV=development` (else 500) |
 | `DOCI_TRUSTED_PROXIES` | recommended | empty | Comma-separated IPv4 / CIDR list. Only requests from these source IPs may set `Remote-User`. Empty = no proxy trusted (API-key auth only) |
-| `DOCI_DEBUG_LOG` | no | `false` | `true` enables verbose per-request JSON logging. Security events (auth, CSRF, deletes) log regardless |
+| `DOCI_LOG_LEVEL` | no | `WARN` | Log threshold: `ERROR` &lt; `WARN` &lt; `INFO` &lt; `DEBUG`. Security-relevant actions (auth, CSRF, deletes, API-key usage) log regardless of level |
 | `TZ` | no | `America/Chicago` | Container timezone |
 | `EXTERNAL_SCRIPTS_URL` | no | empty | CDN for shared JS, if any |
 
@@ -200,7 +200,7 @@ Wire whatever monitoring the host already uses.
 |--------|----------|------|
 | Apache access | `docker logs doci` | Every HTTP hit |
 | Apache error | `docker logs doci` | 5xx, PHP fatal errors |
-| App log | `/var/log/doci/app.log` (named volume `doci-logs`) | DOCI's own structured log (JSON lines); verbose when `DOCI_DEBUG_LOG=true`, security events always |
+| App log | `/var/log/doci/app.log` (named volume `doci-logs`) | DOCI's own structured log (JSON lines); chattiness controlled by `DOCI_LOG_LEVEL`, security events always |
 | Git commits | `files/.git/` (`git log`) | Every document mutation |
 
 Tail the app log:

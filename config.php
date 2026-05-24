@@ -97,7 +97,7 @@ if ($rawRemoteUser !== null) {
     } else {
         // Untrusted source trying to set Remote-User -- always log,
         // always strip. (Uses error_log directly so the warning is
-        // visible regardless of DOCI_DEBUG_LOG.)
+        // visible regardless of DOCI_LOG_LEVEL.)
         error_log('[DOCI] WARN auth.untrusted_remote_user src=' . $remoteAddr
             . ' attempted_user=' . substr($rawRemoteUser, 0, 50));
         unset($_SERVER['HTTP_REMOTE_USER']);
@@ -200,22 +200,55 @@ function doci_ip_in_cidr(string $ip, string $cidr): bool {
 // ========================================================================
 // LOGGING
 // ========================================================================
+//
+// DOCI_LOG_LEVEL controls how chatty doci_log() is:
+//
+//   ERROR  - only ERROR-rank lines
+//   WARN   - + WARN (default; safe for production)
+//   INFO   - + per-request INFO traces (verbose; dev/short-window only)
+//   DEBUG  - + DEBUG (verbose plus internal diagnostics)
+//
+// Security-relevant actions (auth.*, csrf.*, api.auth_*, *.delete.*,
+// *.api_key_*) bypass the threshold entirely so the audit trail is
+// never silenced by a low log level. See doci_log_is_always_on().
 
-// Verbose request/response logging. Off by default. Set
-// DOCI_DEBUG_LOG=true for development or short-window debugging.
-// (Security-relevant events log regardless -- see doci_log() and CB-7.)
-define('DOCI_DEBUG_LOG', strtolower((string) getenv('DOCI_DEBUG_LOG')) === 'true');
+const DOCI_LOG_RANK = ['DEBUG' => 0, 'INFO' => 1, 'WARN' => 2, 'ERROR' => 3];
+
+$_doci_log_raw = strtoupper((string) getenv('DOCI_LOG_LEVEL'));
+define('DOCI_LOG_LEVEL', isset(DOCI_LOG_RANK[$_doci_log_raw]) ? $_doci_log_raw : 'WARN');
+unset($_doci_log_raw);
+
 define('DOCI_LOG_FILE', getenv('DOCI_LOG_FILE') ?: '/var/log/doci/app.log');
 
 /**
- * Log application events for debugging
+ * Returns true for security-relevant actions that must always reach
+ * the log regardless of DOCI_LOG_LEVEL: authentication events, CSRF
+ * violations, delete operations, API-key usage.
+ */
+function doci_log_is_always_on(string $action): bool {
+    return str_starts_with($action, 'auth.')
+        || str_starts_with($action, 'csrf.')
+        || str_starts_with($action, 'api.auth_')
+        || strpos($action, '.delete') !== false
+        || strpos($action, '.api_key') !== false;
+}
+
+/**
+ * Log application events.
  *
- * @param string $action Action being performed (e.g., 'thread.create', 'version.create')
- * @param array $data Additional data to log
- * @param string $level Log level: 'INFO', 'WARN', 'ERROR'
+ * @param string $action Action being performed (e.g. 'thread.create',
+ *                       'documents.delete.start').
+ * @param array  $data   Additional structured data.
+ * @param string $level  'DEBUG' | 'INFO' | 'WARN' | 'ERROR'.
+ *                       Lines below DOCI_LOG_LEVEL are dropped unless
+ *                       doci_log_is_always_on($action) returns true.
  */
 function doci_log(string $action, array $data = [], string $level = 'INFO'): void {
-    if (!DOCI_DEBUG_LOG) {
+    $level = strtoupper($level);
+    $msgRank = DOCI_LOG_RANK[$level] ?? DOCI_LOG_RANK['INFO'];
+    $minRank = DOCI_LOG_RANK[DOCI_LOG_LEVEL];
+
+    if ($msgRank < $minRank && !doci_log_is_always_on($action)) {
         return;
     }
 

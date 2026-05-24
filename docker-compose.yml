@@ -30,8 +30,9 @@ services:
       # CSRF enforcement on browser-flow POST/PUT/DELETE. On by
       # default; disable only for API-key-only deployments.
       - DOCI_CSRF_ENABLED=${DOCI_CSRF_ENABLED:-true}
-      # Verbose JSON-line logging. Security events log regardless.
-      - DOCI_DEBUG_LOG=${DOCI_DEBUG_LOG:-false}
+      # Log threshold (ERROR|WARN|INFO|DEBUG). Security-relevant
+      # actions log regardless of this level.
+      - DOCI_LOG_LEVEL=${DOCI_LOG_LEVEL:-WARN}
       # Domain for git commits
       - DOCI_DOMAIN=${DOCI_DOMAIN:-doci.example.com}
       # Application URLs

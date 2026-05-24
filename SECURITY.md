@@ -43,7 +43,8 @@ DOCI implements the following security measures:
 2. Set strong `DB_PASS` and `DOCI_API_KEY_HASH`
 3. Keep `DOCI_ENV=production` and `DOCI_DEV_AUTO_AUTH=false` (defaults)
    — the app refuses to start serving requests if `DOCI_DEV_AUTO_AUTH=true`
-   without `DOCI_ENV=development`. Leave `DOCI_DEBUG_LOG=false` unless
-   actively debugging.
+   without `DOCI_ENV=development`. Keep `DOCI_LOG_LEVEL=WARN` (the
+   production default) unless actively debugging; security-relevant
+   actions log regardless of level.
 4. Regularly update dependencies
 5. Monitor logs for suspicious activity
