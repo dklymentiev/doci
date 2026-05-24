@@ -1,6 +1,9 @@
-# Environment and secrets
+# Environment and secrets (including the example template -- the
+# image should not ship a template for operators to misread as a
+# functioning .env)
 .env
 .env.*
+.env.example
 .api-key
 .api-key-hash
 .doci-api-key
@@ -40,6 +43,14 @@ vendor/
 composer.lock
 composer.phar
 .phpunit.*
+
+# Python dev artifacts (mcp_server.py only; no Python in image)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Debug
 test-*.php
