@@ -1,4 +1,4 @@
-# DOCI -- Functional Spec
+# DOCI — Functional Spec
 
 ## Document model
 
@@ -52,7 +52,7 @@ commit `Update <path>`.
 
 `DELETE /api/documents.php?guid=<g>`. Sets `deleted_at = NOW()`. The
 file on disk is left in place; a `Delete <path>` commit is recorded.
-Restoring is a metadata operation (no API in v0.1 -- direct SQL).
+Restoring is a metadata operation (no API in v0.1 — direct SQL).
 
 ### Inbox
 
@@ -66,13 +66,19 @@ preserves GUID.
 
 ### Threads
 
-`POST /api/thread.php` with `{parent_guid, title, quote?, message}`. The
-thread is itself a document with `doc_type='thread'` and `parent_guid`
-pointing at the document under discussion. The first message goes in the
-file body.
+`POST /api/thread.php` with `{documentGuid, comment, quote?, occurrenceIndex?, requestAiResponse?, aiModel?}`.
+The thread is itself a document with `doc_type='thread'`. **Starting a
+thread on a `document` or `thread` row auto-snapshots the source into a
+`version`** — the thread's `parent_guid` then points at that version,
+not the live document. (Starting a thread on an existing `version` reuses
+it.) `quote` is the plain selected text from the rendered surface;
+`occurrenceIndex` disambiguates which match to wrap when the same string
+appears multiple times. Title is derived from the first line of
+`comment` (truncated to 100 chars).
 
-`POST /api/thread-reply.php` appends a reply to an existing thread's
-file. (No separate reply rows; the file is the log.)
+`POST /api/thread-reply.php` with `{threadGuid, message}` appends a reply
+to an existing thread's file. (No separate reply rows; the file is the
+log.) Always queues a sonnet AI reply asynchronously.
 
 ### Versions
 
@@ -92,12 +98,12 @@ already exists.
 
 ## Interfaces
 
-- **Web UI** (`index.php`) -- read/edit, threads, inbox, search.
-- **REST** (`api/*.php`) -- canonical contract; everything else calls it
+- **Web UI** (`index.php`) — read/edit, threads, inbox, search.
+- **REST** (`api/*.php`) — canonical contract; everything else calls it
   or duplicates it.
-- **CLI** (`deep`) -- thin shell wrapper for inbox-heavy use:
+- **CLI** (`deep`) — thin shell wrapper for inbox-heavy use:
   `deep inbox`, `deep list`, `deep show`, `deep promote`.
-- **MCP** (`mcp_server.py`) -- FastMCP server exposing `doci_create`,
+- **MCP** (`mcp_server.py`) — FastMCP server exposing `doci_create`,
   `doci_get`, `doci_update`, `doci_delete`, `doci_inbox`,
   `doci_inbox_list`, `doci_thread`, `doci_threads`, `doci_reply`,
   `doci_versions`, `doci_search`. Talks to REST over HTTP.

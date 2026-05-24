@@ -1,8 +1,12 @@
-# DOCI -- Data Dictionary
+# DOCI — Data Dictionary
 
 **Database:** `doci`
 **App user:** `doci_app`
-**Initial migration:** `migrations/001_initial_schema.sql`
+**Migrations (applied idempotently on every container start):**
+- `migrations/001_initial_schema.sql` — `documents` table + indexes
+- `migrations/002_key_documents.sql` — `key_documents` table
+- `migrations/003_hierarchy_full_chain.sql` — rewrite
+  `get_document_hierarchy()` to walk thread + version links
 
 ## Tables
 
@@ -26,6 +30,28 @@
 | `access` | `TEXT` | Reserved for per-doc ACL (not wired in v0.1) |
 | `deleted_at` | `TIMESTAMPTZ` | Soft-delete tombstone |
 
+### `key_documents`
+
+Curated "first reach for these" registry: a many-to-many mapping from
+`documents.guid` to a domain string (`marketing`, `support`,
+`incidents`, …). A document can be canonical in several domains at
+once.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `BIGSERIAL PRIMARY KEY` | Surrogate; identifies one mapping row |
+| `guid` | `UUID NOT NULL` | References `documents.guid` (no FK — see below) |
+| `domain` | `TEXT NOT NULL` | Free-form domain label |
+| `label` | `TEXT` | Optional display label override |
+| `description` | `TEXT` | Optional one-line description |
+| `update_trigger` | `TEXT` | Free-form "when should this be refreshed" hint |
+| `created_at` | `TIMESTAMPTZ DEFAULT NOW()` | |
+
+No FK to `documents(guid)` by design: `documents` is soft-deleted (the
+row stays), so referential integrity at the SQL level would prevent the
+tombstone from doing its job. Removing a `key_documents` row is a
+separate operation.
+
 ## Indexes
 
 ```sql
@@ -35,15 +61,28 @@ CREATE INDEX idx_documents_original ON documents (original_guid);
 CREATE INDEX idx_documents_path     ON documents (path);
 CREATE INDEX idx_documents_tags     ON documents USING gin (tags);
 CREATE INDEX idx_documents_type     ON documents (doc_type);
+
+CREATE INDEX idx_key_documents_guid   ON key_documents (guid);
+CREATE INDEX idx_key_documents_domain ON key_documents (domain);
 ```
 
 ## Functions
 
 ### `get_document_hierarchy(doc_guid UUID)`
 
-Recursive CTE walking the parent chain from `doc_guid` to root.
-Returns rows ordered root-first, each carrying `guid`, `path`, `title`,
-`depth`. Used by the UI breadcrumb and by `documents.php::getHierarchy`.
+Recursive CTE walking the ancestry chain from `doc_guid` upward.
+Returns rows ordered root-first, each carrying `guid`, `path`,
+`doc_type`, `title`, `quote`, `depth`. Used by the UI breadcrumb,
+`documents.php::getHierarchy`, and the AI thread-reply prompt builder.
+
+Walk rule (set by migration `003`):
+`step = COALESCE(parent_guid, original_guid)` — a `thread` row follows
+its `parent_guid` (the version it is anchored to); a `version` row
+follows its `original_guid` (the source it snapshotted); a `document`
+row terminates with NULL. Depth is capped at 20 to defend against
+accidental cycles. Earlier versions of the function walked only
+`parent_guid` and lost the root document context whenever a `version`
+sat in the middle of the chain.
 
 ## Filesystem mapping
 
@@ -92,5 +131,5 @@ docker compose exec doci php scripts/index-documents.php
 
 This walks the tree, inserts a row for every `.md` file not already
 indexed (matched by path), and leaves existing rows alone. Lost
-metadata (tags, summaries) is not recoverable from files alone -- they
+metadata (tags, summaries) is not recoverable from files alone — they
 were authored through the API, not embedded in the markdown.

@@ -2,9 +2,14 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x     | :white_check_mark: |
+DOCI is pre-1.0 (current: 0.1.x). Until a 1.0 release ships, only the
+most recent tagged release receives security fixes; older 0.x releases
+do not. A formal support matrix appears here once 1.x lands.
+
+| Version | Supported            |
+| ------- | -------------------- |
+| 0.1.x   | :white_check_mark:   |
+| < 0.1   | :x:                  |
 
 ## Reporting a Vulnerability
 

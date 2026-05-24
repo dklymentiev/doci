@@ -1,4 +1,4 @@
-# DOCI -- Vision
+# DOCI — Vision
 
 ## Problem
 
@@ -28,7 +28,7 @@ DOCI is a small self-hosted document workspace that takes:
 
 A document keeps its stable GUID across renames. Threads attach to documents
 (and to specific quoted passages). Versions snapshot a document before each
-edit. AI agents drive the whole thing through MCP -- the same tools the UI
+edit. AI agents drive the whole thing through MCP — the same tools the UI
 calls.
 
 ## What DOCI is NOT
@@ -74,7 +74,7 @@ calls.
 - A new user can clone, `docker compose up`, and have a working UI in
   under five minutes.
 - The same set of operations is accessible through UI, REST, CLI, and
-  MCP -- no operation lives in only one of them.
+  MCP — no operation lives in only one of them.
 - A document's history (versions + git commits) is sufficient to
   reconstruct any past state of the file and its metadata.
 - A solo developer can host an instance on a $5/mo VPS without external
