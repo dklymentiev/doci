@@ -69,7 +69,7 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed
 - `doci.local` as a hardcoded fallback for `DOCI_DOMAIN`. The variable
   is now required at boot; the container fails fast if it is missing.
-- Hardcoded LAN bind in `mcp_server.py` (the dev server's `10.86.45.1`).
+- Hardcoded LAN bind in `mcp_server.py` (a specific private LAN address).
   SSE / streamable-http transports now require `DOCI_MCP_HOST`
   (use `127.0.0.1` for local-only, `0.0.0.0` for all interfaces); the
   process exits with code 2 if it is missing. Stdio transport is
