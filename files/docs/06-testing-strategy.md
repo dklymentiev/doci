@@ -92,8 +92,8 @@ change to `api/*.php` or `documents.php`.
 
 **Planned expansion (Phase 5):**
 - `auth_traefik` — Remote-User header path (currently only API key is exercised).
-- `csrf_rejection` — once `require_csrf_token()` is re-enabled, verify
-  that a missing token returns 403.
+- `csrf_rejection` — with `DOCI_CSRF_ENABLED=true`, verify that a
+  missing token returns 403.
 - `register` — index an out-of-band file, verify idempotency.
 - `key_documents` — full M:N CRUD.
 - `version_chain` — verify version → original linkage and ordering.

@@ -473,7 +473,14 @@ if __name__ == "__main__":
             port = int(sys.argv[i + 1])
 
     if transport in ("sse", "http"):
-        mcp.settings.host = "10.86.45.1"
+        host = os.environ.get("DOCI_MCP_HOST")
+        if not host:
+            sys.stderr.write(
+                "DOCI_MCP_HOST is required for sse/http transport "
+                "(e.g. 127.0.0.1 for local-only, 0.0.0.0 to bind all interfaces)\n"
+            )
+            sys.exit(2)
+        mcp.settings.host = host
         mcp.settings.port = port
         actual_transport = "streamable-http" if transport == "http" else "sse"
         mcp.run(transport=actual_transport)

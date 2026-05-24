@@ -257,7 +257,13 @@ function validate_csrf_token(): bool {
  * Require valid CSRF token for state-changing requests
  * Call this at the start of POST/PUT/DELETE handlers
  */
-function require_csrf_token(): void { return; // TEMPORARILY DISABLED
+function require_csrf_token(): void {
+    // CSRF enforcement is opt-in while the gate is being hardened
+    // (see docs/04-roadmap.md Phase 5). Set DOCI_CSRF_ENABLED=true to
+    // enforce browser-flow CSRF checks. Default = disabled (insecure).
+    if (strtolower((string) getenv('DOCI_CSRF_ENABLED')) !== 'true') {
+        return;
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         return;  // GET requests don't need CSRF protection
     }

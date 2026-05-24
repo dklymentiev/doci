@@ -69,6 +69,18 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed
 - `doci.local` as a hardcoded fallback for `DOCI_DOMAIN`. The variable
   is now required at boot; the container fails fast if it is missing.
+- Hardcoded LAN bind in `mcp_server.py` (the dev server's `10.86.45.1`).
+  SSE / streamable-http transports now require `DOCI_MCP_HOST`
+  (use `127.0.0.1` for local-only, `0.0.0.0` for all interfaces); the
+  process exits with code 2 if it is missing. Stdio transport is
+  unaffected.
+
+### Security
+- CSRF enforcement is now an explicit opt-in via `DOCI_CSRF_ENABLED=true`.
+  The previous behaviour (a hidden `return;` at the top of
+  `require_csrf_token()`) remains the default while the gate is being
+  hardened in Phase 5 of the roadmap, but the flag is documented in
+  `.env.example` so the disabled-by-default state is no longer silent.
 
 ## [0.1.0] - 2026-05-22
 
@@ -112,8 +124,8 @@ First open-source release. Code extracted from internal use at klymentiev.com.
 - No multi-tenant isolation. Single org / single git repo per instance.
 - No built-in user management. Auth is delegated to a reverse proxy or
   to API key holders.
-- CSRF gate in `config.php::require_csrf_token` early-returns; re-enabled
-  in Phase 5 of the roadmap.
+- CSRF enforcement is opt-in (`DOCI_CSRF_ENABLED=true`); default is
+  disabled while the gate is being hardened in Phase 5 of the roadmap.
 - No built-in search endpoint; the architecture doc previously listed a
   `search.php` route that was never shipped. Path/title/tag lookup works
   through `GET /api/documents.php?path=…`; semantic search requires the
