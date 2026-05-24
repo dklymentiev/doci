@@ -45,7 +45,8 @@ The canonical doc set lives in `docs/`:
   `getDocumentByGuid`, `getDocumentHierarchy`, …).
 - `api/*.php` — 10 REST endpoints; the canonical contract.
 - `lib/git.php`, `lib/validation.php`, `lib/response.php`,
-  `lib/markdown.php`, `lib/mesh.php`, `lib/render.php`.
+  `lib/markdown.php`, `lib/mesh.php`, `lib/render.php`,
+  `lib/key-documents.php` (canonical-docs registry backend).
 - `ai.php` — OpenAI-compatible gateway adapter.
 - `mcp_server.py` — FastMCP server.
 - `migrations/00N_*.sql` — Postgres schema (idempotent, re-applied on
@@ -67,7 +68,7 @@ composer test                       # unit suite
 ## Production rule worth memorising
 
 **Always pass `--project-directory` when running `docker compose` for
-the prod stack:**
+the prod stack** (substitute your own project directory):
 
 ```bash
 docker compose --project-directory /srv/doci \
@@ -87,7 +88,10 @@ detaches from the reverse proxy. See
   index (`scripts/index-documents.php`).
 - Auth: `X-API-Key` header (SHA-256 compared in constant time against
   `DOCI_API_KEY_HASH`), or external auth via reverse proxy passing
-  `Remote-User`. CSRF token required for browser-flow mutations.
+  `Remote-User`. The `Remote-User` header is honoured only when the
+  request source IP is listed in `DOCI_TRUSTED_PROXIES`. CSRF token
+  required for browser-flow mutations (`DOCI_CSRF_ENABLED=true` is
+  the default; opt-out only for API-key-only deployments).
 - New endpoints / new MCP tools / new container behaviour all require
   the **Live Benchmark Gate** in
   [`docs/06-testing-strategy.md`](docs/06-testing-strategy.md) before

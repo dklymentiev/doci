@@ -107,7 +107,7 @@ doci/
 ├── ai.php                 # AI gateway adapter (OpenAI-compatible)
 ├── mcp_server.py          # FastMCP server (12 tools over the REST API)
 ├── deep                   # POSIX shell CLI
-├── lib/                   # git, validation, response, mesh, markdown, render
+├── lib/                   # git, validation, response, mesh, markdown, render, key-documents
 ├── migrations/            # PostgreSQL schema (idempotent)
 ├── scripts/               # entrypoint, index-documents, normalize-links
 ├── files/                 # Document storage (gitignored; user content)

@@ -87,7 +87,7 @@ When reporting bugs, please include:
 
 ## Security
 
-If you discover a security vulnerability, please email security@example.com instead of creating a public issue. See [SECURITY.md](SECURITY.md) for details.
+If you discover a security vulnerability, please email security@klymentiev.com instead of creating a public issue. See [SECURITY.md](SECURITY.md) for details.
 
 ## License
 
