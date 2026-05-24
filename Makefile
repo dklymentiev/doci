@@ -1,12 +1,12 @@
 # DOCI -- operator shortcuts
 #
 # `make help` lists everything. The deploy / logs / shell targets assume
-# DOCI is running under /server/scripts/doci with the standard compose
+# DOCI is running under /srv/doci with the standard compose
 # layout (docker-compose.yml for prod, docker-compose.dev.yml for local).
 # Override PROJECT_DIR for other hosts.
 
 PROJECT_DIR     ?= $(CURDIR)
-PROD_PROJECT    ?= /server/scripts/doci
+PROD_PROJECT    ?= /srv/doci
 COMPOSE_DEV     = docker compose --project-directory $(PROJECT_DIR) -f $(PROJECT_DIR)/docker-compose.dev.yml
 COMPOSE_PROD    = docker compose --project-directory $(PROD_PROJECT) -f $(PROD_PROJECT)/docker-compose.yml
 APP_CT          = doci

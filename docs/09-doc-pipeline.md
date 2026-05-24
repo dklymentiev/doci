@@ -175,8 +175,8 @@ Phase 6.
 - A new layer is wired (L1 code reference, or CI staleness check).
   Replace the "as it stands today" diagram with the new reality.
 - The doc-canon template at
-  `/server/scripts/doci/files/templates/software-product/` bumps a
-  version. Reconcile the differences and bump this doc's revision.
+  `files/templates/software-product/` in this repo bumps a version.
+  Reconcile the differences and bump this doc's revision.
 
 ---
 

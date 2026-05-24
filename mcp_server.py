@@ -455,14 +455,6 @@ async def doci_health() -> str:
 # ──────────────────────────────────────────
 
 if __name__ == "__main__":
-    # SSE heartbeat -- prevent proxy/NAT timeout disconnects
-    try:
-        sys.path.insert(0, "/server/scripts")
-        from shared.mcp_heartbeat import patch_sse_heartbeat
-        patch_sse_heartbeat()
-    except ImportError:
-        pass
-
     transport = "stdio"
     port = int(os.environ.get("DOCI_MCP_PORT", "8200"))
 

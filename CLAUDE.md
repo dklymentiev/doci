@@ -69,7 +69,7 @@ composer test                       # unit suite
 the prod stack:**
 
 ```bash
-docker compose --project-directory /server/scripts/doci \
+docker compose --project-directory /srv/doci \
   -f docker-compose.yml up -d --build doci
 ```
 

@@ -70,7 +70,7 @@ Deploy:
 
 ```bash
 docker compose \
-  --project-directory /server/scripts/doci \
+  --project-directory /srv/doci \
   -f docker-compose.yml \
   up -d --build doci
 ```
@@ -124,7 +124,7 @@ Tags are immutable. Rollback = re-deploy the previous image tag.
 ```bash
 git checkout v0.1.0
 docker compose \
-  --project-directory /server/scripts/doci \
+  --project-directory /srv/doci \
   -f docker-compose.yml \
   up -d --build doci
 ```

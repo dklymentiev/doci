@@ -100,9 +100,10 @@ git push origin main --tags
   `docs/live-benchmark-vX.Y.Z.md` (DB row excerpts, screenshots, git
   log lines). This becomes part of the release artifact.
 - [ ] Write a worklog in mesh referencing the release commit + tag.
-- [ ] If deploying to the author's HQ production:
+- [ ] If deploying to production, run from the project directory so
+  Traefik labels resolve (example path; substitute your own):
   ```bash
-  docker compose --project-directory /server/scripts/doci \
+  docker compose --project-directory /srv/doci \
     -f docker-compose.yml up -d --build doci
   ```
 - [ ] Verify `/api/health.php` returns 200 on the deployed host.
