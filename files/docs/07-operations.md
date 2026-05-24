@@ -41,7 +41,7 @@ but is not supported in prod.
 ```bash
 docker compose -f docker-compose.dev.yml up -d
 # UI on http://localhost:8080, Postgres on host 5433
-# DOCI_DEBUG=true auto-authenticates as user "dev"
+# DOCI_ENV=development + DOCI_DEV_AUTO_AUTH=true auto-authenticate as user "dev"
 ```
 
 The dev compose builds the image, starts an embedded Postgres,
@@ -152,7 +152,9 @@ escalate to a full incident.
 | `AUTH_URL` | no | empty | Forward-auth logout endpoint |
 | `AI_GATEWAY_URL` | no | empty | OpenAI-compatible `/chat/completions` endpoint. Empty → AI thread replies disabled |
 | `AI_GATEWAY_SSL_VERIFY` | no | `true` | Set to `false` only for self-signed dev gateways |
-| `DOCI_DEBUG` | no | `false` | `true` enables debug logging AND auto-auth as `dev` (dev only) |
+| `DOCI_ENV` | no | `production` | `development` is the only value that allows `DOCI_DEV_AUTO_AUTH=true` to take effect |
+| `DOCI_DEV_AUTO_AUTH` | no | `false` | `true` auto-authenticates browser requests as `dev`; requires `DOCI_ENV=development` (else 500) |
+| `DOCI_DEBUG_LOG` | no | `false` | `true` enables verbose per-request JSON logging. Security events (auth, CSRF, deletes) log regardless |
 | `TZ` | no | `America/Chicago` | Container timezone |
 | `EXTERNAL_SCRIPTS_URL` | no | empty | CDN for shared JS, if any |
 
@@ -197,7 +199,7 @@ Wire whatever monitoring the host already uses.
 |--------|----------|------|
 | Apache access | `docker logs doci` | Every HTTP hit |
 | Apache error | `docker logs doci` | 5xx, PHP fatal errors |
-| App log | `/var/log/doci/app.log` (named volume `doci-logs`) | DOCI's own structured log (JSON lines) when `DOCI_DEBUG=true` |
+| App log | `/var/log/doci/app.log` (named volume `doci-logs`) | DOCI's own structured log (JSON lines); verbose when `DOCI_DEBUG_LOG=true`, security events always |
 | Git commits | `files/.git/` (`git log`) | Every document mutation |
 
 Tail the app log:

@@ -35,15 +35,18 @@ curl -fsS http://localhost:8080/api/health.php | jq .
 # → {"status":"ok", "db":"connected", "files_writable":true, ...}
 ```
 
-Visit <http://localhost:8080>. Because `DOCI_DEBUG=true` in the dev
-compose, you are auto-authenticated as user `dev` — no API key
-needed for the browser flow.
+Visit <http://localhost:8080>. Because the dev compose sets
+`DOCI_ENV=development` and `DOCI_DEV_AUTO_AUTH=true`, you are
+auto-authenticated as user `dev` — no API key needed for the browser
+flow. (Production refuses to honour `DOCI_DEV_AUTO_AUTH=true` without
+the explicit `DOCI_ENV=development` assertion.)
 
 ## 2. Create your first document via API
 
-The dev stack accepts any value in `X-API-Key` when
-`DOCI_DEBUG=true`. In prod you generate a hash; see
-[`07-operations.md`](07-operations.md#configuration).
+The dev stack ships with a known `DOCI_API_KEY_HASH` (sha256 of
+`dev-test-key-not-for-production`), so any value in `X-API-Key`
+fails — pass the documented dev key, or generate your own hash for
+prod (see [`07-operations.md`](07-operations.md#configuration)).
 
 ```bash
 export DOCI_API_URL=http://localhost:8080/api

@@ -80,12 +80,28 @@ if ($remoteUser !== null && !preg_match('/^[a-zA-Z0-9_-]+$/', $remoteUser)) {
     $remoteUser = null;
 }
 
-// Dev-mode auto-auth: when DOCI_DEBUG=true and no auth was provided,
-// authenticate as 'dev'. Set DOCI_DEBUG only in trusted local setups
-// (docker-compose.dev.yml sets it). Production compose defaults to false.
-if ($remoteUser === null && getenv('DOCI_DEBUG') === 'true' && empty($_SERVER['HTTP_X_API_KEY'])) {
-    $remoteUser = 'dev';
-    $_SERVER['HTTP_REMOTE_USER'] = 'dev';
+// Dev-mode auto-auth.
+//
+// To activate the bypass two independent env vars must be set, so a
+// stray DOCI_DEV_AUTO_AUTH=true in a production .env cannot open the
+// door on its own:
+//
+//   DOCI_DEV_AUTO_AUTH=true   -- the request
+//   DOCI_ENV=development      -- the assertion that we are not in prod
+//
+// Any other combination is a configuration error. The request is
+// refused with 500 before any handler runs, never silently downgraded
+// to "no auto-auth".
+if (strtolower((string) getenv('DOCI_DEV_AUTO_AUTH')) === 'true') {
+    if (strtolower((string) getenv('DOCI_ENV')) !== 'development') {
+        error_log('[DOCI] FATAL: DOCI_DEV_AUTO_AUTH=true requires DOCI_ENV=development. Refusing to auto-authenticate.');
+        http_response_code(500);
+        die('Configuration error: dev auto-auth requested outside a development environment');
+    }
+    if ($remoteUser === null && empty($_SERVER['HTTP_X_API_KEY'])) {
+        $remoteUser = 'dev';
+        $_SERVER['HTTP_REMOTE_USER'] = 'dev';
+    }
 }
 
 // Regenerate session ID on authentication change (prevent session fixation)
@@ -115,8 +131,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // LOGGING
 // ========================================================================
 
-// Logging configuration from environment
-define('DOCI_DEBUG_LOG', getenv('DOCI_DEBUG') === 'true' || getenv('DOCI_DEBUG') === '1');
+// Verbose request/response logging. Off by default. Set
+// DOCI_DEBUG_LOG=true for development or short-window debugging.
+// (Security-relevant events log regardless -- see doci_log() and CB-7.)
+define('DOCI_DEBUG_LOG', strtolower((string) getenv('DOCI_DEBUG_LOG')) === 'true');
 define('DOCI_LOG_FILE', getenv('DOCI_LOG_FILE') ?: '/var/log/doci/app.log');
 
 /**

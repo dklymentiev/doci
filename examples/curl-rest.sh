@@ -6,7 +6,7 @@
 # Run:
 #   chmod +x examples/curl-rest.sh
 #   API_KEY=$(openssl rand -hex 32) ./examples/curl-rest.sh
-# (the dev stack accepts any key when DOCI_DEBUG=true)
+# (the dev stack accepts any key — DOCI_API_KEY_HASH is preconfigured)
 
 set -euo pipefail
 

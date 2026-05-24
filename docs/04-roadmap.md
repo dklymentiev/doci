@@ -33,7 +33,7 @@ feature; canonical Level-0 doc set.
 - [x] `docker-compose.dev.yml` — fully self-contained, embedded Postgres
 - [x] `docker-compose.yml` — production with external Postgres + Traefik
 - [x] Migrations applied automatically on first start
-- [x] `DOCI_DEBUG=true` auto-auth as `dev` for local trial
+- [x] `DOCI_ENV=development` + `DOCI_DEV_AUTO_AUTH=true` auto-auth as `dev` for local trial
 - [x] `docs/01-vision.md`, `docs/02-spec.md`, `docs/03-architecture.md`,
   `docs/data-dictionary.md` (Level 1 partial)
 - [x] Tour content in `files/tour/` (10 stops)

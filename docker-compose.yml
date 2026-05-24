@@ -15,8 +15,15 @@ services:
       # AI Gateway
       - AI_GATEWAY_URL=${AI_GATEWAY_URL:-https://ai.example.com/api/v1}
       - AI_GATEWAY_SSL_VERIFY=${AI_GATEWAY_SSL_VERIFY:-true}
-      # Logging (set to true for debug)
-      - DOCI_DEBUG=${DOCI_DEBUG:-false}
+      # Environment flag (development|production). Production by
+      # default; dev-mode auto-auth refuses to activate outside
+      # development.
+      - DOCI_ENV=${DOCI_ENV:-production}
+      # Dev-mode auto-auth (insecure). Refuses to activate unless
+      # DOCI_ENV=development.
+      - DOCI_DEV_AUTO_AUTH=${DOCI_DEV_AUTO_AUTH:-false}
+      # Verbose JSON-line logging. Security events log regardless.
+      - DOCI_DEBUG_LOG=${DOCI_DEBUG_LOG:-false}
       # Domain for git commits
       - DOCI_DOMAIN=${DOCI_DOMAIN:-doci.example.com}
       # Application URLs

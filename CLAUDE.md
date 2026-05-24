@@ -57,7 +57,8 @@ The canonical doc set lives in `docs/`:
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d
-# UI: http://localhost:8080  (DOCI_DEBUG=true auto-auths as "dev")
+# UI: http://localhost:8080  (the dev compose sets DOCI_ENV=development +
+#                              DOCI_DEV_AUTO_AUTH=true, which auto-auths as "dev")
 # DB: psql -h 127.0.0.1 -p 5433 -U doci_app -d doci
 make api-test                       # integration suite against the running stack
 composer test                       # unit suite

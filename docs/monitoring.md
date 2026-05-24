@@ -60,8 +60,10 @@ Wire it as the single source of truth for "is DOCI up":
 
 ## App log
 
-When `DOCI_DEBUG=true`, every API call writes a JSON line to
-`/var/log/doci/app.log` (mounted as the `doci-logs` named volume):
+When `DOCI_DEBUG_LOG=true`, every API call writes a JSON line to
+`/var/log/doci/app.log` (mounted as the `doci-logs` named volume).
+Security-relevant events (auth failures, CSRF violations, deletes,
+API-key usage) log regardless of the flag:
 
 ```json
 {"ts":"2026-05-24T14:30:12Z","rid":"r-7f3a","level":"info","user":"alice","uid":"a1b2c3d4-…","ip":"10.0.0.5","action":"document.update","data":{"guid":"…","fields":["tags"]}}
@@ -88,10 +90,10 @@ Pipe into Loki / OpenSearch / Splunk by mounting the volume into
 your log shipper, or rotate it with `logrotate` and ship the
 rotated files. JSON-per-line means no parser pain.
 
-`DOCI_DEBUG=false` (prod default) keeps the log mostly silent —
-warnings and errors still write; the per-call info lines do not.
-Flip to `true` temporarily when chasing a bug; the volume can grow
-fast under load.
+`DOCI_DEBUG_LOG=false` (prod default) keeps the log mostly silent —
+warnings, errors, and security events still write; the per-call info
+lines do not. Flip to `true` temporarily when chasing a bug; the
+volume can grow fast under load.
 
 ## Apache logs
 
