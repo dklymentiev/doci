@@ -70,14 +70,38 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Get user info from reverse-proxy ForwardAuth header
-// Production deploys typically set Remote-User from an auth middleware
-$remoteUser = $_SERVER['HTTP_REMOTE_USER'] ?? null;
-
-// Validate Remote-User header format (alphanumeric, underscore, hyphen only)
-if ($remoteUser !== null && !preg_match('/^[a-zA-Z0-9_-]+$/', $remoteUser)) {
-    doci_log('auth.invalid_username', ['raw' => substr($remoteUser, 0, 50)], 'WARN');
-    $remoteUser = null;
+// Get user info from reverse-proxy ForwardAuth header.
+//
+// The Remote-User header is trusted ONLY if the request originated
+// from an IP that the operator explicitly allowlisted via
+// DOCI_TRUSTED_PROXIES (comma-separated list of IPs and/or CIDR
+// ranges, IPv4). Default = empty = trust no one. Without an
+// explicit allowlist, any Remote-User header is stripped before
+// reaching the handler -- this prevents direct-to-container clients
+// (anyone on traefik-net or with the published port) from forging
+// the header and authenticating as anyone.
+$remoteUser = null;
+$rawRemoteUser = $_SERVER['HTTP_REMOTE_USER'] ?? null;
+if ($rawRemoteUser !== null) {
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+    $trusted = (string) getenv('DOCI_TRUSTED_PROXIES');
+    if (doci_is_trusted_proxy($remoteAddr, $trusted)) {
+        // Source IP is trusted; validate header format
+        // (alphanumeric, underscore, hyphen only).
+        if (preg_match('/^[a-zA-Z0-9_-]+$/', $rawRemoteUser)) {
+            $remoteUser = $rawRemoteUser;
+        } else {
+            // Trusted source but malformed header value -- log + drop.
+            error_log('[DOCI] WARN auth.invalid_username raw=' . substr($rawRemoteUser, 0, 50));
+        }
+    } else {
+        // Untrusted source trying to set Remote-User -- always log,
+        // always strip. (Uses error_log directly so the warning is
+        // visible regardless of DOCI_DEBUG_LOG.)
+        error_log('[DOCI] WARN auth.untrusted_remote_user src=' . $remoteAddr
+            . ' attempted_user=' . substr($rawRemoteUser, 0, 50));
+        unset($_SERVER['HTTP_REMOTE_USER']);
+    }
 }
 
 // Dev-mode auto-auth.
@@ -126,6 +150,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 // Note: Authorization is handled by Authum - all authenticated users have full access
 // For multi-user RBAC, implement user roles in database
+
+// ========================================================================
+// TRUSTED PROXY (Remote-User source enforcement)
+// ========================================================================
+
+/**
+ * Check whether $ip matches any entry in $trustedList.
+ *
+ * $trustedList is a comma-separated string of IPv4 addresses and/or
+ * CIDR ranges (e.g. "172.20.0.0/16,10.0.0.0/8,127.0.0.1").
+ * Empty list returns false. IPv6 source addresses currently return
+ * false unless their textual form appears verbatim in the list.
+ */
+function doci_is_trusted_proxy(string $ip, string $trustedList): bool {
+    if ($ip === '' || $trustedList === '') {
+        return false;
+    }
+    foreach (explode(',', $trustedList) as $cidr) {
+        $cidr = trim($cidr);
+        if ($cidr !== '' && doci_ip_in_cidr($ip, $cidr)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function doci_ip_in_cidr(string $ip, string $cidr): bool {
+    if ($cidr === $ip) {
+        return true;
+    }
+    if (strpos($cidr, '/') === false) {
+        return false;
+    }
+    [$subnet, $mask] = explode('/', $cidr, 2);
+    $maskBits = (int) $mask;
+    $ipLong = ip2long($ip);
+    $subnetLong = ip2long($subnet);
+    if ($ipLong === false || $subnetLong === false || $maskBits < 0 || $maskBits > 32) {
+        return false;  // IPv4 only; IPv6 fallthrough returns false
+    }
+    if ($maskBits === 0) {
+        return true;  // /0 matches everything (dev convenience: "0.0.0.0/0")
+    }
+    $maskLong = -1 << (32 - $maskBits);
+    return ($ipLong & $maskLong) === ($subnetLong & $maskLong);
+}
 
 // ========================================================================
 // LOGGING

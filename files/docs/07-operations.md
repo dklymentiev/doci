@@ -154,6 +154,7 @@ escalate to a full incident.
 | `AI_GATEWAY_SSL_VERIFY` | no | `true` | Set to `false` only for self-signed dev gateways |
 | `DOCI_ENV` | no | `production` | `development` is the only value that allows `DOCI_DEV_AUTO_AUTH=true` to take effect |
 | `DOCI_DEV_AUTO_AUTH` | no | `false` | `true` auto-authenticates browser requests as `dev`; requires `DOCI_ENV=development` (else 500) |
+| `DOCI_TRUSTED_PROXIES` | recommended | empty | Comma-separated IPv4 / CIDR list. Only requests from these source IPs may set `Remote-User`. Empty = no proxy trusted (API-key auth only) |
 | `DOCI_DEBUG_LOG` | no | `false` | `true` enables verbose per-request JSON logging. Security events (auth, CSRF, deletes) log regardless |
 | `TZ` | no | `America/Chicago` | Container timezone |
 | `EXTERNAL_SCRIPTS_URL` | no | empty | CDN for shared JS, if any |
