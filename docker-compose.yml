@@ -6,15 +6,20 @@ services:
     environment:
       # Database (REQUIRED)
       - DB_HOST=${DB_HOST:-postgres}
-      - DB_PORT=5432
-      - DB_NAME=doci
-      - DB_USER=doci_app
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-doci}
+      - DB_USER=${DB_USER:-doci_app}
       - DB_PASS=${DOCI_DB_PASS:?Database password required}
       # API Key (hash of the key for secure comparison)
       - DOCI_API_KEY_HASH=${DOCI_API_KEY_HASH:-}
-      # AI Gateway
-      - AI_GATEWAY_URL=${AI_GATEWAY_URL:-https://ai.example.com/api/v1}
+      # AI Gateway. Empty AI_GATEWAY_URL disables AI features.
+      - AI_GATEWAY_URL=${AI_GATEWAY_URL:-}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_GATEWAY_TIMEOUT=${AI_GATEWAY_TIMEOUT:-120}
       - AI_GATEWAY_SSL_VERIFY=${AI_GATEWAY_SSL_VERIFY:-true}
+      - AI_MODEL_HAIKU=${AI_MODEL_HAIKU:-}
+      - AI_MODEL_SONNET=${AI_MODEL_SONNET:-}
+      - AI_MODEL_OPUS=${AI_MODEL_OPUS:-}
       # Environment flag (development|production). Production by
       # default; dev-mode auto-auth refuses to activate outside
       # development.

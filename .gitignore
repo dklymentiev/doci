@@ -1,5 +1,6 @@
 # Environment files (contain secrets)
 .env
+.env.*
 .api-key
 .api-key-hash
 .doci-api-key
@@ -25,6 +26,16 @@ composer.lock
 composer.phar
 .phpunit.cache/
 .phpunit.result.cache
+
+# Python (mcp_server.py + any scratch scripts)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # Debug
 test-*.php
