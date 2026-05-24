@@ -8,7 +8,7 @@
  */
 
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../ParsedownExtended.php';
+require_once __DIR__ . '/../lib/markdown.php';
 
 header('Content-Type: application/json');
 
@@ -32,14 +32,13 @@ try {
 
     $documentGuid = $input['documentGuid'] ?? null;
     $selectedText = $input['selectedText'] ?? '';
-    $contextBefore = $input['contextBefore'] ?? '';
-    $contextAfter = $input['contextAfter'] ?? '';
+    $occurrenceIndex = (int) ($input['occurrenceIndex'] ?? 0);
 
     doci_log('validate.start', [
         'documentGuid' => $documentGuid,
         'selectedText' => substr($selectedText, 0, 50) . (strlen($selectedText) > 50 ? '...' : ''),
         'selectedLength' => strlen($selectedText),
-        'hasContext' => !empty($contextBefore) || !empty($contextAfter)
+        'occurrence' => $occurrenceIndex,
     ]);
 
     if (!$documentGuid) {
@@ -77,14 +76,39 @@ try {
 
     $markdown = file_get_contents($filePath);
 
-    // Validate using ParsedownExtended - supports both inline and block threads
-    $parsedown = new ParsedownExtended();
-    $result = $parsedown->canCreateThreadBlock($markdown, $selectedText, $contextBefore, $contextAfter);
+    // Run the SAME matcher that thread.php will use at creation time. If the
+    // selection can't be located now, the modal/comment step is grayed out so
+    // the user doesn't waste effort writing a comment for a thread that won't
+    // create.
+    $match = find_thread_quote_in_source($markdown, $selectedText, $occurrenceIndex);
+
+    if ($match === null) {
+        $result = [
+            'valid' => false,
+            'reason' => 'Could not locate this selection in the source markdown. Try a shorter span or pick a single paragraph.',
+            'markdownFragment' => '',
+        ];
+    } else {
+        $check = check_thread_wrap_target($markdown, $match['start'], $match['raw']);
+        if ($check['ok']) {
+            $result = [
+                'valid' => true,
+                'reason' => '',
+                'markdownFragment' => $match['raw'],
+            ];
+        } else {
+            $result = [
+                'valid' => false,
+                'reason' => $check['reason'],
+                'markdownFragment' => $match['raw'],
+            ];
+        }
+    }
 
     doci_log('validate.result', [
         'valid' => $result['valid'],
         'reason' => $result['reason'] ?? null,
-        'isBlock' => $result['isBlock'] ?? false
+        'isBlock' => $result['isBlock'] ?? false,
     ]);
 
     echo json_encode($result);

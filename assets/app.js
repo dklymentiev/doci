@@ -44,59 +44,39 @@
     });
 
     function initKeyDocToggle() {
-        var btn = document.getElementById('key-doc-toggle');
-        if (!btn) return;
-        btn.addEventListener('click', async function (e) {
-            e.preventDefault();
-            var guid = btn.dataset.guid;
-            var isKey = btn.classList.contains('is-key');
+        var input = document.getElementById('key-doc-toggle');
+        if (!input) return;
+        input.addEventListener('change', async function () {
+            var guid = input.dataset.guid;
+            var checked = input.checked;
+            input.disabled = true;
             try {
-                if (isKey) {
-                    var r = await fetch('/api/key-document.php?guid=' + encodeURIComponent(guid), { credentials: 'same-origin' });
-                    var data = await r.json();
-                    var items = (data && data.items) || [];
-                    if (items.length === 0) {
-                        if (confirm('This document is marked key but has no detail rows. Add one?')) await markKey();
-                        return;
-                    }
-                    var lines = items.map(function (it) {
-                        return '  id ' + it.id + '  domain=' + (it.domain || '') + (it.label ? '  label="' + it.label + '"' : '');
-                    }).join('\n');
-                    var pick = prompt('Key-document records on this doc:\n\n' + lines + '\n\nEnter id to remove, or A to add another, or blank to cancel:');
-                    if (!pick) return;
-                    if (pick.trim().toUpperCase() === 'A') { await markKey(); return; }
-                    var id = parseInt(pick, 10);
-                    if (!id) return;
-                    var resp = await fetch('/api/key-document.php?id=' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken }, credentials: 'same-origin' });
-                    var rd = await resp.json();
-                    if (rd.success) window.location.reload();
-                    else alert('Remove failed: ' + (rd.error || 'unknown'));
+                if (checked) {
+                    var resp = await fetch('/api/key-document.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ guid: guid, domain: 'default' })
+                    });
+                    var data = await resp.json();
+                    if (!data.success) throw new Error(data.error || 'mark failed');
                 } else {
-                    await markKey();
+                    var rg = await fetch('/api/key-document.php?guid=' + encodeURIComponent(guid), { credentials: 'same-origin' });
+                    var info = await rg.json();
+                    var items = (info && info.items) || [];
+                    for (var i = 0; i < items.length; i++) {
+                        var rd = await fetch('/api/key-document.php?id=' + items[i].id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken }, credentials: 'same-origin' });
+                        var jr = await rd.json();
+                        if (!jr.success) throw new Error(jr.error || 'unmark failed');
+                    }
                 }
-            } catch (err) { alert('Error: ' + err.message); }
+            } catch (err) {
+                input.checked = !checked;
+                alert('Toggle failed: ' + err.message);
+            } finally {
+                input.disabled = false;
+            }
         });
-
-        async function markKey() {
-            var domain = prompt('Domain (e.g. marketing, infrastructure, compliance, ops):');
-            if (!domain) return;
-            domain = domain.trim();
-            if (!domain) return;
-            var label = prompt('Short label for this doc in that domain (optional):') || null;
-            var description = prompt('Why is this document key? (optional):') || null;
-            var update_trigger = prompt('When must it be reviewed/updated? (optional)\nExamples: "When brand identity changes", "Quarterly", "Before each release":') || null;
-            try {
-                var resp = await fetch('/api/key-document.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ guid: btn.dataset.guid, domain: domain, label: label, description: description, update_trigger: update_trigger })
-                });
-                var data = await resp.json();
-                if (data.success) window.location.reload();
-                else alert('Mark failed: ' + (data.error || 'unknown'));
-            } catch (err) { alert('Error: ' + err.message); }
-        }
     }
 
     // ========================================================================
@@ -321,6 +301,11 @@
                                 var guidUrl = window.location.origin + '/' + data.meta.guid;
                                 metaHtml += '<span class="meta-sep">|</span>';
                                 metaHtml += '<span class="meta-item"><span class="meta-label">GUID:</span> <span class="document-guid" id="copy-guid" data-url="' + guidUrl + '">' + escapeHtml(data.meta.guid) + '</span></span>';
+                                metaHtml += '<span class="meta-sep">|</span>';
+                                metaHtml += '<label class="key-switch" title="' + (data.meta.isKey ? 'Marked as canonical' : 'Mark as canonical') + '">';
+                                metaHtml += '<input type="checkbox" id="key-doc-toggle" data-guid="' + escapeHtml(data.meta.guid) + '"' + (data.meta.isKey ? ' checked' : '') + '>';
+                                metaHtml += '<span class="key-switch-slider"></span><span class="key-switch-label">Canonical</span>';
+                                metaHtml += '</label>';
                             }
 
                             if (data.meta.commits && data.meta.commits.length > 0 && data.meta.commitUrlBase) {
@@ -346,13 +331,28 @@
                                     setTimeout(function() { copyGuid.textContent = original; }, 1500);
                                 };
                             }
+
+                            // Re-attach handler for the freshly-rebuilt Key switch.
+                            initKeyDocToggle();
                         }
                     }
 
-                    // Hide version bar (page-specific)
+                    // Swap the version bar with the one rendered for the
+                    // new page. data.versionBar is '' when the page has
+                    // no versions to navigate -- in that case we just
+                    // remove the stale bar from prior page.
                     var versionBar = document.querySelector('.version-bar');
-                    if (versionBar) {
-                        versionBar.style.display = 'none';
+                    var newBarHtml = (data.versionBar || '').trim();
+                    if (newBarHtml) {
+                        if (versionBar) {
+                            versionBar.outerHTML = newBarHtml;
+                        } else {
+                            // No bar in DOM yet -- insert before article.
+                            var article = contentArea;
+                            article.insertAdjacentHTML('beforebegin', newBarHtml);
+                        }
+                    } else if (versionBar) {
+                        versionBar.remove();
                     }
 
                     // Sync edit/delete controls visibility with the new path
@@ -372,6 +372,13 @@
                     // Re-bind search forms and preview after AJAX load
                     bindSearchForms();
                     bindSearchPreview();
+
+                    // Newly loaded content has fresh DOM nodes -- rebind
+                    // anything that listens for events on rendered content.
+                    initThreadBlocks();
+                    initEntityChips();
+                    initAiResponse();
+                    initThreadReply();
 
                     updateActiveLink(data.path);
                     window.scrollTo(0, 0);
@@ -701,7 +708,13 @@
         var selectionRange = null;
         var validationResult = null;
         var startThreadItem = contextMenu.querySelector('[data-action="start-thread"]');
-        var documentGuid = config.documentGuid || '';
+        // Read the current page's GUID from the live DOM (#copy-guid),
+        // not from a closure captured at first page load -- otherwise
+        // creating a thread after SPA navigation posts to the stale doc.
+        function getCurrentDocumentGuid() {
+            var el = document.getElementById('copy-guid');
+            return (el && el.textContent.trim()) || config.documentGuid || '';
+        }
 
         // Handle "Discuss Document" click
         if (contextMenuDoc) {
@@ -711,7 +724,7 @@
                 if (item.dataset.action === 'discuss-document') {
                     contextMenuDoc.classList.remove('visible');
                     window.threadContext = {
-                        documentGuid: documentGuid,
+                        documentGuid: getCurrentDocumentGuid(),
                         selectedText: '',
                         contextBefore: '',
                         contextAfter: '',
@@ -736,12 +749,15 @@
             }
 
             // No text selected - show document-level menu
-            if (text.length === 0 && documentGuid && e.target.closest('.markdown-content')) {
+            if (text.length === 0 && getCurrentDocumentGuid() && e.target.closest('.markdown-content')) {
                 e.preventDefault();
-                var x = e.pageX;
-                var y = e.pageY;
+                // Menu is position:fixed -- use viewport-relative coordinates,
+                // not page coordinates, otherwise the menu drifts down by the
+                // current scrollY on long pages.
+                var x = e.clientX;
+                var y = e.clientY;
                 if (x + 200 > window.innerWidth) x = window.innerWidth - 210;
-                if (y + 50 > window.innerHeight + window.scrollY) y = y - 50;
+                if (y + 50 > window.innerHeight) y = y - 50;
                 contextMenuDoc.style.left = x + 'px';
                 contextMenuDoc.style.top = y + 'px';
                 contextMenuDoc.classList.add('visible');
@@ -756,14 +772,15 @@
                 selectionRange = selection.getRangeAt(0).cloneRange();
                 validationResult = null;
 
-                var x = e.pageX;
-                var y = e.pageY;
+                // position:fixed -- viewport-relative coords (clientX/Y).
+                var x = e.clientX;
+                var y = e.clientY;
                 var menuWidth = 180;
                 var menuHeight = 80;
                 if (x + menuWidth > window.innerWidth) {
                     x = window.innerWidth - menuWidth - 10;
                 }
-                if (y + menuHeight > window.innerHeight + window.scrollY) {
+                if (y + menuHeight > window.innerHeight) {
                     y = y - menuHeight;
                 }
 
@@ -799,7 +816,7 @@
         function validateSelection(text, range) {
             var markdown = window.rawMarkdown || '';
 
-            if (!documentGuid) {
+            if (!getCurrentDocumentGuid()) {
                 return Promise.resolve({ valid: false, reason: 'Document not registered' });
             }
 
@@ -851,8 +868,9 @@
                 selectedText: text,
                 contextBefore: contextBefore,
                 contextAfter: contextAfter,
+                occurrenceIndex: occurrenceIndex,
                 documentPath: config.currentPath || '',
-                documentGuid: documentGuid
+                documentGuid: getCurrentDocumentGuid()
             };
 
             return fetch('/api/validate-selection.php', {
@@ -860,10 +878,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
                 body: JSON.stringify({
-                    documentGuid: documentGuid,
+                    documentGuid: getCurrentDocumentGuid(),
                     selectedText: text,
-                    contextBefore: contextBefore,
-                    contextAfter: contextAfter
+                    occurrenceIndex: occurrenceIndex
                 })
             })
             .then(function(res) { return res.json(); })
@@ -1040,8 +1057,7 @@
                     body: JSON.stringify({
                         documentGuid: window.threadContext.documentGuid,
                         quote: window.threadContext.selectedText,
-                        contextBefore: window.threadContext.contextBefore || '',
-                        contextAfter: window.threadContext.contextAfter || '',
+                        occurrenceIndex: window.threadContext.occurrenceIndex || 0,
                         comment: comment,
                         requestAiResponse: requestAi,
                         aiModel: requestAi ? selectedModel : null,
@@ -1117,26 +1133,31 @@
     // Thread Block Interactions
     // ========================================================================
     function initThreadBlocks() {
-        var threadBlocks = document.querySelectorAll('.thread-block');
+        var threadBlocks = document.querySelectorAll('.thread-block, .thread-block-fragment');
         if (!threadBlocks.length) return;
 
         threadBlocks.forEach(function(block) {
-            var indicator = block.querySelector('.thread-indicator');
             var guid = block.dataset.threadGuid;
-            var title = block.dataset.threadTitle || 'Thread';
-            var author = block.dataset.threadAuthor || '';
+            if (!guid) return;
 
-            if (indicator) {
-                var tooltip = title;
-                if (author) tooltip += ' by ' + author;
-                indicator.setAttribute('data-tooltip', tooltip);
+            block.setAttribute('role', 'link');
+            block.setAttribute('tabindex', '0');
 
-                indicator.addEventListener('click', function(e) {
+            block.addEventListener('click', function(e) {
+                // Honour clicks that landed on real anchors inside the block.
+                if (e.target.closest('a')) return;
+                // Ignore clicks during a text selection drag.
+                var sel = window.getSelection();
+                if (sel && sel.toString().length > 0) return;
+                window.location.href = '/' + guid;
+            });
+
+            block.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    e.stopPropagation();
                     window.location.href = '/' + guid;
-                });
-            }
+                }
+            });
         });
 
         // Highlight thread block from URL hash

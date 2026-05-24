@@ -13,10 +13,34 @@
  * @return string HTML content
  */
 function parse_markdown(string $markdown): string {
+    // Mask code blocks and inline code first so {{embed: ...}} inside
+    // backticks (used in docs to *describe* the shortcode) is not parsed
+    // as a real embed. Restored after Parsedown runs.
+    $codeStash = [];
+    $markdown = preg_replace_callback(
+        '/(^|\n)(```[^\n]*\n[\s\S]*?\n```)/m',
+        function ($m) use (&$codeStash) {
+            $token = "\x00DOCICODE" . count($codeStash) . "\x00";
+            $codeStash[$token] = $m[2];
+            return $m[1] . $token;
+        },
+        $markdown
+    );
+    $markdown = preg_replace_callback(
+        '/`[^`\n]+`/',
+        function ($m) use (&$codeStash) {
+            $token = "\x00DOCICODE" . count($codeStash) . "\x00";
+            $codeStash[$token] = $m[0];
+            return $token;
+        },
+        $markdown
+    );
+
     // Extract {{embed: path/to.html [| height=320]}} shortcodes BEFORE
     // Parsedown's safe-mode strips HTML. Replace each with a stable
     // placeholder; after Parsedown runs, expand the placeholders into
-    // sandboxed iframes that share DOCI's theme (via render_html_document).
+    // inline HTML (via render_html_inline). The `| height=NNN` hint is
+    // accepted for backward compatibility and silently ignored.
     $embeds = [];
     $markdown = preg_replace_callback(
         '/\{\{embed:\s*([\w\-\.\/]+\.html)(?:\s*\|\s*height=(\d+))?\s*\}\}/',
@@ -27,6 +51,13 @@ function parse_markdown(string $markdown): string {
         },
         $markdown
     );
+
+    // Restore code tokens before Parsedown so they parse as code normally.
+    if (!empty($codeStash)) {
+        foreach ($codeStash as $token => $original) {
+            $markdown = str_replace($token, $original, $markdown);
+        }
+    }
 
     $parsedown = new ParsedownExtended();
     $parsedown->setSafeMode(true); // Escape HTML for security
@@ -39,16 +70,12 @@ function parse_markdown(string $markdown): string {
                 $real = realpath($filePath);
                 $filesRoot = realpath(__DIR__ . '/../files');
                 if ($real !== false && strpos($real, $filesRoot) === 0) {
-                    $rendered = render_html_document(file_get_contents($filePath));
-                    // render_html_document yields an iframe; tag it as an embed
-                    // and pin a height so it doesn't stretch like a full doc.
-                    $rendered = preg_replace(
-                        '#class="doci-html-doc"#',
-                        'class="doci-html-doc doci-embed" style="height:' . (int)$opts['height'] . 'px"',
-                        $rendered,
-                        1
-                    );
-                    $replacement = $rendered;
+                    // Inline embed -- the embedded HTML's styles get scoped
+                    // to .doci-html-inline by render_html_inline, and the
+                    // body becomes part of the surrounding markdown page.
+                    // The legacy `| height=NNN` hint is ignored (no iframe
+                    // to size); the embed grows to fit its content.
+                    $replacement = render_html_inline(file_get_contents($filePath));
                 } else {
                     $replacement = '<div class="doci-embed-error">Embed path outside files/: ' . htmlspecialchars($opts['path']) . '</div>';
                 }
@@ -72,17 +99,6 @@ function parse_markdown(string $markdown): string {
 
     // Allow <span id="..."> for custom anchors
     $html = preg_replace('/&lt;span id="([a-z0-9\-]+)"&gt;&lt;\/span&gt;/', '<span id="$1"></span>', $html);
-
-    // Style thread links (marked with ~ prefix) as chips: [~text](/guid) -> chip
-    $html = preg_replace_callback(
-        '/<a href="(\/[^"]+)">~(.+?)<\/a>/',
-        function($matches) {
-            $href = $matches[1];
-            $text = $matches[2];
-            return '<a href="' . $href . '" class="thread-chip">' . $text . '</a>';
-        },
-        $html
-    );
 
     // Replace AI pending placeholder with loading animation
     $html = preg_replace(
@@ -166,61 +182,59 @@ function doci_is_html_document(string $content): bool {
 }
 
 /**
- * Render an HTML document inside a sandboxed iframe.
+ * Render a full HTML document INLINE (no iframe) into the surrounding DOCI page.
  *
- * The raw HTML is embedded via the iframe `srcdoc` attribute, so it inherits
- * DOCI's CSP (script-src 'self' 'unsafe-inline') -- inline HTML/CSS/JS runs.
- * The sandbox allows scripts but omits `allow-same-origin`, so the document
- * runs in an opaque origin and cannot read DOCI's session cookie or the
- * parent DOM. X-Frame-Options does not apply to srcdoc frames.
+ * Used by the .html file route and by the {{embed:}} markdown shortcode.
+ * The whole document is unwrapped:
+ *   - `<style>` blocks are pulled out; selectors that match the document root
+ *     (`:root`, `html`, `body`) are rewritten to `.doci-html-inline` so the
+ *     embedded CSS variables / page-level styles scope to a single wrapper
+ *     div instead of leaking into DOCI's own theme.
+ *   - `<body>` contents are taken verbatim.
+ *   - Everything else (`<!doctype>`, `<html>`, `<head>`, `<meta>`, `<title>`,
+ *     `<link>`) is stripped — DOCI already owns those slots.
+ *
+ * No sandbox. The embedded JS runs in the page's origin like any other DOCI
+ * script; only first-party HTML files (under `files/`) are routed here.
  *
  * @param string $html Raw HTML document content
- * @return string HTML fragment containing the iframe
+ * @return string HTML fragment to drop into the DOCI page body
  */
-function render_html_document(string $html): string {
-    // Inject DOCI theme stylesheets (absolute URL — the iframe runs in an
-    // opaque origin, so relative URLs would resolve against about:srcdoc).
-    // The browser fetches and applies the stylesheets even though the iframe
-    // can't read them via CSSOM. Documents that use DOCI theme variables
-    // (var(--bg-main), var(--text-primary), etc.) pick up the active theme.
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $baseUrl = htmlspecialchars($scheme . '://' . $host, ENT_QUOTES, 'UTF-8');
-    $themeLink = '<link rel="stylesheet" href="' . $baseUrl . '/assets/doci-theme.css">';
+function render_html_inline(string $html): string {
+    // 1. Pull every <style> block out, rewriting root-level selectors.
+    $styles = '';
+    $html = preg_replace_callback(
+        '#<style[^>]*>([\s\S]*?)</style>#i',
+        function ($m) use (&$styles) {
+            $css = $m[1];
+            // Scope root-level selectors to the inline wrapper so CSS
+            // variables and html/body styles don't leak into DOCI's
+            // surrounding chrome. Order matters -- the more specific
+            // joint selector first.
+            $css = preg_replace('/(^|\}|\s)\s*html\s*,\s*body\s*\{/m', '$1.doci-html-inline {', $css);
+            $css = preg_replace('/(^|\}|\s)\s*:root\s*\{/m', '$1.doci-html-inline {', $css);
+            $css = preg_replace('/(^|\}|\s)\s*body\s*\{/m', '$1.doci-html-inline {', $css);
+            $css = preg_replace('/(^|\}|\s)\s*html\s*\{/m', '$1.doci-html-inline {', $css);
+            $styles .= $css . "\n";
+            return '';
+        },
+        $html
+    );
 
-    // Listen for theme updates from the parent. The parent posts the active
-    // theme on iframe load and on every theme toggle so the iframe stays
-    // in sync with the surrounding DOCI chrome.
-    $themeListener = '<script>window.addEventListener("message",function(e){'
-        . 'if(e.data&&typeof e.data.docTheme==="string"){'
-        . 'document.documentElement.dataset.theme=e.data.docTheme}});</script>';
-
-    // Default <html data-theme> to "dark" so the iframe matches the parent's
-    // default before the postMessage arrives.
-    if (preg_match('#<html(?![^>]*data-theme=)([^>]*)>#i', $html)) {
-        $html = preg_replace('#<html(?![^>]*data-theme=)([^>]*)>#i', '<html$1 data-theme="dark">', $html, 1);
-    }
-
-    $injection = $themeLink . $themeListener;
-    if (preg_match('#<head[^>]*>#i', $html)) {
-        $html = preg_replace('#(<head[^>]*>)#i', '$1' . $injection, $html, 1);
-    } elseif (preg_match('#<html[^>]*>#i', $html)) {
-        $html = preg_replace('#(<html[^>]*>)#i', '$1<head>' . $injection . '</head>', $html, 1);
+    // 2. Extract <body>...</body>; fall back to stripping shell tags.
+    if (preg_match('#<body[^>]*>([\s\S]*?)</body>#i', $html, $m)) {
+        $body = $m[1];
     } else {
-        $html = '<head>' . $injection . '</head>' . $html;
+        $body = preg_replace('#<!doctype[^>]*>#i', '', $html);
+        $body = preg_replace('#</?(?:html|head)\b[^>]*>#i', '', $body);
+        $body = preg_replace('#<(?:meta|link)\b[^>]*/?>#i', '', $body);
+        $body = preg_replace('#<title[^>]*>[\s\S]*?</title>#i', '', $body);
     }
 
-    $srcdoc = htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
-    // allow-top-navigation-by-user-activation lets links inside the
-    // iframe navigate the parent page (target="_top") on user click --
-    // needed for showcase widgets with CTA buttons that point at DOCI
-    // pages. Still no allow-same-origin, so the iframe is opaque to
-    // DOCI's session.
-    return '<iframe class="doci-html-doc"'
-         . ' sandbox="allow-scripts allow-popups allow-forms allow-modals allow-top-navigation-by-user-activation"'
-         . ' referrerpolicy="no-referrer"'
-         . ' srcdoc="' . $srcdoc . '"'
-         . ' title="HTML document"></iframe>';
+    return '<div class="doci-html-inline">'
+        . ($styles !== '' ? '<style>' . $styles . '</style>' : '')
+        . $body
+        . '</div>';
 }
 
 /**
@@ -248,13 +262,17 @@ function rewrite_md_links_to_guids(string $markdown): string {
     $markdown = preg_replace_callback(
         '/\[([^\]\n]+)\]\(\s*([^)\s]+)(\s+"[^"]*")?\s*\)/',
         function ($m) {
-            $newUrl = path_to_guid_url($m[2]);
+            // First try to repair if it's a dead GUID URL (post-reseed safety).
+            $url = repair_dead_guid_link($m[2], $m[1]);
+            // Then forward-normalize path -> GUID.
+            $newUrl = path_to_guid_url($url);
             return '[' . $m[1] . '](' . $newUrl . ($m[3] ?? '') . ')';
         },
         $markdown
     );
 
-    // Reference: [label]: url  (line-anchored)
+    // Reference: [label]: url  (line-anchored). Reference links have no
+    // adjacent display text we can recover from; only forward-normalize.
     $markdown = preg_replace_callback(
         '/^(\s{0,3}\[[^\]\n]+\]:\s+)(\S+)/m',
         function ($m) {
@@ -264,6 +282,160 @@ function rewrite_md_links_to_guids(string $markdown): string {
     );
 
     return $markdown;
+}
+
+/**
+ * If $url is a /<guid> link whose GUID no longer exists in the documents
+ * table (post-reseed, post-rename, post-restore), try to recover the
+ * intended target from the visible link text and rewrite the URL to the
+ * path form. A subsequent path_to_guid_url() call will then forward-
+ * normalize it to the current live GUID.
+ *
+ * Heuristic: the link text in our docs usually contains the path hint
+ * (e.g. `[/farm](...)`, `[`docs/05-api-reference`](...)`, `[CHANGELOG](...)`)
+ * because that's what the writer typed before normalize-links rewrote
+ * the URL. We strip backticks/slashes/extensions and look the hint up
+ * against the documents table.
+ *
+ * If recovery fails, the dead URL is left intact and a warning is logged
+ * so an operator notices.
+ *
+ * @param string $url       The URL portion of the markdown link.
+ * @param string $linkText  The bracketed display text of the link.
+ * @return string           Either the original $url, or a recovered /path form.
+ */
+/**
+ * Locate a rendered-text selection inside its markdown source.
+ *
+ * Browser selections come back as plain text (no `**`, no backticks, with
+ * `\n` joins where the source had `\n\n`). Straight strpos fails whenever
+ * the span crosses a marker. This walks the source token-by-token so any
+ * sequence of `[\W_]*?` between tokens is consumed -- bold/italic/code
+ * markers, list bullets, blockquote prefixes, and whitespace collapse.
+ *
+ * Returns ['start' => int, 'length' => int, 'raw' => string] on hit, or
+ * null when no plausible match exists.
+ *
+ * `$occurrenceIndex` (0-based) selects which match when the same text
+ * appears multiple times -- the client tracks this by counting DOM
+ * occurrences before the selection.
+ */
+/**
+ * Decide whether the given match span can safely host a thread wrap.
+ *
+ * Three categories of selection are refused because the inline HTML-comment
+ * wrap can't survive them:
+ *   - inside a fenced code block (``` ... ```): comments would render as text
+ *   - crossing a table row (a `\n` adjacent to a `|`-formatted line)
+ *   - crossing block boundaries without a clean paragraph break (single `\n`
+ *     between e.g. list items, header -> body, etc.) -- the rendered span
+ *     would straddle <li>/<p> tags and produce invalid HTML.
+ *
+ * Returns ['ok' => true] or ['ok' => false, 'reason' => '...'].
+ */
+function check_thread_wrap_target(string $source, int $start, string $raw): array {
+    // 1) fenced code block: count ``` before the start position; odd = inside.
+    $before = substr($source, 0, $start);
+    $fenceCount = preg_match_all('/^```/m', $before);
+    if ($fenceCount % 2 === 1) {
+        return ['ok' => false, 'reason' => 'Selection is inside a code block.'];
+    }
+
+    // 2) multi-line raw with a pipe -> probably a markdown table.
+    if (strpos($raw, "\n") !== false && strpos($raw, '|') !== false) {
+        return ['ok' => false, 'reason' => 'Selection crosses a table boundary.'];
+    }
+
+    // 3) raw has a single `\n` but no paragraph break -> would straddle a block
+    //    element (list item, header, etc.). Either keep it inside one line or
+    //    pick a clean multi-paragraph span.
+    if (strpos($raw, "\n") !== false && preg_match('/\n\s*\n/', $raw) !== 1) {
+        return ['ok' => false, 'reason' => 'Selection crosses a block boundary without a clear paragraph break. Try a shorter span inside one block, or extend it to the end of the paragraph.'];
+    }
+
+    return ['ok' => true];
+}
+
+function find_thread_quote_in_source(string $source, string $selectedText, int $occurrenceIndex = 0): ?array {
+    $tokens = preg_split('/\s+/u', trim($selectedText), -1, PREG_SPLIT_NO_EMPTY);
+    if (!$tokens) {
+        return null;
+    }
+
+    $parts = [];
+    foreach ($tokens as $tok) {
+        $parts[] = preg_quote($tok, '/');
+    }
+    $pattern = '/' . implode('[\W_]*?', $parts) . '/su';
+
+    if (!preg_match_all($pattern, $source, $matches, PREG_OFFSET_CAPTURE)) {
+        return null;
+    }
+
+    $hits = $matches[0];
+    $idx = $occurrenceIndex >= 0 && $occurrenceIndex < count($hits) ? $occurrenceIndex : 0;
+    [$raw, $start] = $hits[$idx];
+
+    return [
+        'start'  => $start,
+        'length' => strlen($raw),
+        'raw'    => $raw,
+    ];
+}
+
+function repair_dead_guid_link(string $url, string $linkText): string {
+    if (!preg_match('~^/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})([/?\#].*)?$~', $url, $m)) {
+        return $url; // not a GUID URL, nothing to repair
+    }
+    $guid = $m[1];
+    $tail = $m[2] ?? '';
+
+    try {
+        $pdo = get_db();
+        $stmt = $pdo->prepare("SELECT 1 FROM documents WHERE guid = ? AND deleted_at IS NULL");
+        $stmt->execute([$guid]);
+        if ($stmt->fetchColumn()) {
+            return $url; // GUID is alive, leave the link alone
+        }
+
+        // Dead GUID. Try recovery from link text.
+        $hint = trim($linkText, " \t`/");
+        if ($hint === '') {
+            error_log("DOCI: dead GUID link with no recovery hint: $url");
+            return $url;
+        }
+        $hint = preg_replace('/\.(md|html)$/', '', $hint);
+
+        $stmt = $pdo->prepare(
+            "SELECT path FROM documents
+             WHERE (path = ? OR path = ? OR path = ? OR path LIKE ?)
+               AND deleted_at IS NULL
+             ORDER BY length(path) ASC
+             LIMIT 1"
+        );
+        $stmt->execute([
+            $hint . '.md',
+            $hint . '/index.md',
+            $hint,
+            '%/' . $hint . '.md',
+        ]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row) {
+            // Rewrite to path form WITHOUT the .md extension; the path_to_guid_url
+            // pass downstream will turn it into the current live GUID.
+            $pathClean = preg_replace('/\/index\.md$|\.md$/', '', $row['path']);
+            $recovered = '/' . $pathClean . $tail;
+            error_log("DOCI: repaired dead GUID link via text='$linkText': $url -> $recovered");
+            return $recovered;
+        }
+
+        error_log("DOCI: dead GUID link, recovery failed: $url (text='$linkText')");
+        return $url;
+    } catch (Exception $e) {
+        error_log("DOCI: repair_dead_guid_link error: " . $e->getMessage());
+        return $url;
+    }
 }
 
 /**

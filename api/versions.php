@@ -25,6 +25,35 @@ doci_log('versions.request', [
 ]);
 
 try {
+    if ($method === 'POST') {
+        // Manual snapshot: freeze a document's current state into a version row.
+        // The thread-creation flow auto-creates versions; this endpoint exists for
+        // explicit "save a checkpoint" gestures (UI buttons, agents, seed scripts).
+        require_csrf_token();
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $documentGuid = $input['document_guid'] ?? $input['documentGuid'] ?? null;
+        if (!$documentGuid) {
+            throw new Exception('document_guid is required');
+        }
+        $createdBy = get_current_username() ?? 'system';
+        $version = create_version($documentGuid, $createdBy);
+        if (!$version) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Failed to create version']);
+            exit;
+        }
+        // Commit the new version file to git so git log shows the snapshot.
+        if (function_exists('git_commit_and_push')) {
+            require_once __DIR__ . '/../lib/git.php';
+            git_commit_and_push($version['path'], 'Snapshot ' . $version['original_guid'] . ' -> version ' . $version['guid'], $createdBy);
+        }
+        echo json_encode([
+            'success' => true,
+            'version' => $version,
+        ]);
+        exit;
+    }
+
     if ($method !== 'GET') {
         doci_log('versions.error', ['error' => 'Method not allowed'], 'ERROR');
         throw new Exception('Method not allowed');

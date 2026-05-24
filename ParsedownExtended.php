@@ -77,63 +77,71 @@ class ParsedownExtended extends Parsedown
     }
 
     /**
-     * Extract thread blocks from markdown and replace with placeholders
+     * Two storage modes per thread region:
+     *   inline -- selection lives inside a single block (no \n\n between markers).
+     *             Tokens stay literally adjacent to the content; post-pass
+     *             swaps them for <span class="thread-block"> + </span>.
+     *   block  -- selection crosses paragraph breaks. Tokens are paragraph-
+     *             isolated so Parsedown wraps them in their own <p>. Post-pass
+     *             strips those wrappers and marks each top-level block between
+     *             them with class="thread-block thread-block-fragment".
+     *
+     * Nested wraps are handled by iterating until no more <!-- @thread:G -->
+     * pairs remain in the source.
      */
     protected function extractThreadBlocks(string $markdown): string
     {
         $this->threadBlockStorage = [];
+        $pattern = '/<!-- @thread:([a-zA-Z0-9-]+) -->(.*?)<!-- @\/thread:\1 -->/s';
 
-        // Pattern to match thread blocks (GUID can be UUID or any alphanumeric identifier)
-        $pattern = '/<!-- @thread:([a-zA-Z0-9-]+) -->\n?(.*?)\n?<!-- @\/thread:\1 -->/si';
+        while (preg_match($pattern, $markdown)) {
+            $markdown = preg_replace_callback($pattern, function ($m) {
+                $guid     = $m[1];
+                $content  = $m[2];
+                $idx      = count($this->threadBlockStorage);
+                $isBlock  = preg_match('/\n\s*\n/', $content) === 1;
+                $this->threadBlockStorage[$idx] = ['guid' => $guid, 'isBlock' => $isBlock];
 
-        return preg_replace_callback($pattern, function($matches) {
-            $guid = $matches[1];
-            $content = $matches[2];
+                if ($isBlock) {
+                    return "\n\nXDOCITHREADBLOCKOPEN{$idx}X\n\n" . $content . "\n\nXDOCITHREADBLOCKCLOSE{$idx}X\n\n";
+                }
+                return "XDOCITHREADINOPEN{$idx}X" . $content . "XDOCITHREADINCLOSE{$idx}X";
+            }, $markdown, 1);
+        }
 
-            // Store for later - use plain text placeholder that won't be escaped
-            $placeholder = "\n\nTHREADBLOCKPLACEHOLDER" . $guid . "ENDPLACEHOLDER\n\n";
-            $this->threadBlockStorage[$guid] = $content;
-
-            return $placeholder;
-        }, $markdown);
+        return $markdown;
     }
 
     /**
-     * Restore thread blocks from placeholders to HTML
+     * Walk the storage after Parsedown ran. For inline tokens, swap to
+     * <span>; for block tokens, drop the paragraph wrappers Parsedown
+     * synthesised around them and tag each contained top-level block.
      */
     protected function restoreThreadBlocks(string $html): string
     {
-        foreach ($this->threadBlockStorage as $guid => $content) {
-            // Pattern for placeholder (might be wrapped in <p> tags)
-            $patterns = [
-                '<p>THREADBLOCKPLACEHOLDER' . $guid . 'ENDPLACEHOLDER</p>',
-                'THREADBLOCKPLACEHOLDER' . $guid . 'ENDPLACEHOLDER'
-            ];
+        foreach ($this->threadBlockStorage as $idx => $rec) {
+            $guidAttr = htmlspecialchars($rec['guid'], ENT_QUOTES);
 
-            // Parse thread content as markdown (keep safe mode to prevent XSS)
-            $parsedContent = parent::text($content);
-
-            // Get thread title from metadata if available
-            $title = $this->threadMeta[$guid]['title'] ?? 'Thread';
-            $author = $this->threadMeta[$guid]['author'] ?? '';
-            $titleAttr = htmlspecialchars($title, ENT_QUOTES);
-            $authorAttr = htmlspecialchars($author, ENT_QUOTES);
-            $guidAttr = htmlspecialchars($guid, ENT_QUOTES);
-
-            $replacement = '<div class="thread-block" data-thread-guid="' . $guidAttr . '" data-thread-title="' . $titleAttr . '" data-thread-author="' . $authorAttr . '">'
-                         . '<div class="thread-indicator"></div>'
-                         . '<div class="thread-content">' . $parsedContent . '</div>'
-                         . '<a class="thread-tab" href="/' . $guidAttr . '">'
-                         . $titleAttr
-                         . ($authorAttr ? ' <span class="thread-tab-author">— ' . $authorAttr . '</span>' : '')
-                         . '</a>'
-                         . '</div>';
-
-            foreach ($patterns as $pattern) {
-                $html = str_replace($pattern, $replacement, $html);
+            if ($rec['isBlock']) {
+                $regex = '/<p>XDOCITHREADBLOCKOPEN' . $idx . 'X<\/p>(.*?)<p>XDOCITHREADBLOCKCLOSE' . $idx . 'X<\/p>/s';
+                $html = preg_replace_callback($regex, function ($m) use ($guidAttr) {
+                    return preg_replace(
+                        '/<(p|ul|ol|h[1-6]|blockquote|table|pre|div|hr)\b/',
+                        '<$1 class="thread-block thread-block-fragment" data-thread-guid="' . $guidAttr . '"',
+                        $m[1]
+                    );
+                }, $html);
+                // Belt and suspenders: clean up any token that wasn't wrapped in <p> (e.g. inside a list cell).
+                $html = preg_replace('/XDOCITHREADBLOCKOPEN' . $idx . 'X|XDOCITHREADBLOCKCLOSE' . $idx . 'X/', '', $html);
+            } else {
+                $html = str_replace(
+                    'XDOCITHREADINOPEN' . $idx . 'X',
+                    '<span class="thread-block" data-thread-guid="' . $guidAttr . '">',
+                    $html
+                );
+                $html = str_replace('XDOCITHREADINCLOSE' . $idx . 'X', '</span>', $html);
             }
         }
-
         return $html;
     }
 

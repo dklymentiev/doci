@@ -11,39 +11,55 @@
    ========================================================================== */
 
 :root {
+    /* Dark theme -- slate palette aligned with the DOCI brand card. */
+
     /* Background */
-    --bg-main:       #1a1a1a;
-    --bg-card:       #242424;
-    --bg-accent:     #2e2e2e;
-    --bg-hover:      #353535;
-    --bg-overlay:    rgba(0,0,0,0.95);
+    --bg-main:       #0f172a;  /* slate-900 -- canvas */
+    --bg-card:       #1e293b;  /* slate-800 -- doc surface */
+    --bg-accent:     #334155;  /* slate-700 -- chips, dividers */
+    --bg-hover:      #475569;  /* slate-600 -- hover state */
+    --bg-overlay:    rgba(15,23,42,0.95);
 
     /* Primary */
-    --primary:       #e0e0e0;
-    --secondary:     #c8a882;
-    --accent:        #c8a882;
-    --accent-hover:  #d4ba96;
+    --primary:       #e2e8f0;  /* slate-200 */
+    --secondary:     #94a3b8;  /* slate-400 */
+    --accent:        #93c5fd;  /* blue-300 -- muted link blue, reads as link without shouting */
+    --accent-hover:  #bfdbfe;  /* blue-200 -- lighter on hover */
 
     /* Text */
-    --text-primary:  #e0e0e0;
-    --text-white:    #f0f0f0;
-    --text-secondary: #999;
-    --text-muted:    #666;
+    --text-primary:  #e2e8f0;  /* slate-200 */
+    --text-white:    #f8fafc;  /* slate-50 */
+    --text-secondary: #94a3b8; /* slate-400 */
+    --text-muted:    #64748b;  /* slate-500 */
 
     /* Status */
-    --ok:            #81c784;
-    --error:         #e57373;
-    --warn:          #ffd54f;
-    --orange:        #ffb74d;
+    --ok:            #22c55e;  /* green-500 -- card accent */
+    --error:         #ef4444;  /* red-500 */
+    --warn:          #f59e0b;  /* amber-500 -- card accent */
+    --orange:        #fb923c;  /* orange-400 */
 
     /* Borders */
-    --border:        #333;
-    --border-hover:  #444;
+    --border:        #334155;  /* slate-700 */
+    --border-hover:  #475569;  /* slate-600 */
 
     /* Scrollbar */
-    --scrollbar-track: #1a1a1a;
-    --scrollbar-thumb: #333;
-    --scrollbar-hover: #444;
+    --scrollbar-track: #0f172a;
+    --scrollbar-thumb: #334155;
+    --scrollbar-hover: #475569;
+
+    /* Ambient brand pattern -- scattered translucent documents on the
+       slate canvas. Pinned to viewport top, fades into flat slate so
+       long pages don't carry the texture all the way down. Set on body
+       below. The light theme overrides this to none. */
+    --bg-pattern: url('/assets/doci-pattern.svg');
+
+    /* Brand-card accents -- reserved for chips, version dots,
+       thread highlights, inbox pending. Map: green=live/active,
+       blue=link/info, purple=thread, amber=pending/warn. */
+    --brand-green:   #22c55e;
+    --brand-blue:    #3b82f6;
+    --brand-purple:  #a855f7;
+    --brand-amber:   #f59e0b;
 }
 
 [data-theme="light"] {
@@ -52,6 +68,7 @@
     --bg-accent:     #eeeeee;
     --bg-hover:      #e4e4e4;
     --bg-overlay:    rgba(255,255,255,0.95);
+    --bg-pattern:    none;
 
     --primary:       #111111;
     --secondary:     #444444;
@@ -118,9 +135,27 @@
 body {
     font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
-    background: var(--bg-main);
+    background-color: var(--bg-main);
+    background-image: var(--bg-pattern);
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: 100% auto;
+    background-attachment: fixed;
     color: var(--text-primary);
     line-height: 1.5;
+}
+
+/* Text selection -- purple aura so a highlighted span signals
+   "this could become a thread anchor", not "this is a link".
+   Default browser selection (system blue) reads as link in our
+   dark theme since links are also blue. */
+::selection {
+    background: rgba(168, 85, 247, 0.35);
+    color: var(--text-white);
+}
+::-moz-selection {
+    background: rgba(168, 85, 247, 0.35);
+    color: var(--text-white);
 }
 
 a { color: var(--secondary); text-decoration: none; }

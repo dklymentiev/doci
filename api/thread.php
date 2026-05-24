@@ -14,6 +14,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../documents.php';
 require_once __DIR__ . '/../ai.php';
+require_once __DIR__ . '/../lib/markdown.php';
 
 header('Content-Type: application/json');
 
@@ -168,44 +169,42 @@ try {
             $stmt = $pdo->prepare("UPDATE documents SET path = ? WHERE guid = ?");
             $stmt->execute([$threadPath, $threadGuid]);
 
-            // Find raw markdown quote from version document
+            // Find raw markdown quote from version document. The browser sends
+            // plain selection text (no `**`, no backticks); we walk the source
+            // token-by-token so markdown markers between tokens are absorbed.
             $markdownQuote = $quote; // fallback to browser text
-            $isBlock = !empty($input['isBlock']);
             $versionFilePath = __DIR__ . '/../files/' . $versionPath;
             $pos = false;
+            $matchLength = strlen($quote);
+            $occurrenceIndex = (int) ($input['occurrenceIndex'] ?? 0);
 
             if ($quote && file_exists($versionFilePath)) {
                 $versionContent = file_get_contents($versionFilePath);
-                $contextBefore = $input['contextBefore'] ?? '';
-                $contextAfter = $input['contextAfter'] ?? '';
 
                 doci_log('thread.link.start', [
                     'version_path' => $versionPath,
                     'quote' => substr($quote, 0, 50) . (strlen($quote) > 50 ? '...' : ''),
-                    'is_block' => $isBlock
+                    'occurrence' => $occurrenceIndex,
                 ]);
 
-                // Try to find position with context
-                if ($contextBefore || $contextAfter) {
-                    $searchPattern = $contextBefore . $quote . $contextAfter;
-                    $contextPos = strpos($versionContent, $searchPattern);
-                    if ($contextPos !== false) {
-                        $pos = $contextPos + strlen($contextBefore);
-                        doci_log('thread.link.found_with_context', ['position' => $pos]);
+                $match = find_thread_quote_in_source($versionContent, $quote, $occurrenceIndex);
+                if ($match !== null) {
+                    $check = check_thread_wrap_target($versionContent, $match['start'], $match['raw']);
+                    if (!$check['ok']) {
+                        doci_log('thread.link.refused', [
+                            'reason' => $check['reason'],
+                            'quote' => substr($quote, 0, 60),
+                        ], 'WARN');
+                        throw new Exception($check['reason']);
                     }
-                }
-
-                // Fallback to simple search
-                if ($pos === false) {
-                    $pos = strpos($versionContent, $quote);
-                    if ($pos !== false) {
-                        doci_log('thread.link.found_simple', ['position' => $pos]);
-                    }
-                }
-
-                // Use the raw markdown from file for the quote
-                if ($pos !== false) {
-                    $markdownQuote = substr($versionContent, $pos, strlen($quote));
+                    $pos = $match['start'];
+                    $matchLength = $match['length'];
+                    $markdownQuote = $match['raw'];
+                    doci_log('thread.link.matched', [
+                        'position' => $pos,
+                        'length' => $matchLength,
+                        'occurrence' => $occurrenceIndex,
+                    ]);
                 }
             }
 
@@ -228,32 +227,59 @@ try {
                 'size' => strlen($content)
             ]);
 
-            // Insert link/block marker into VERSION document
+            // Wrap selected span with inline HTML comments. No newlines around the
+            // markers -- they sit literally adjacent to the selected characters so
+            // they don't introduce block boundaries inside lists, tables, or
+            // headers. The rendered surface is built at parse time by
+            // ParsedownExtended (span vs block-fragment based on whether the body
+            // crosses a paragraph break).
             if ($quote && $pos !== false) {
-                // Determine replacement format
-                if ($isBlock) {
-                    $replacement = "<!-- @thread:" . $threadGuid . " -->\n" . $quote . "\n<!-- @/thread:" . $threadGuid . " -->";
-                } else {
-                    $replacement = '[~' . $quote . '](/' . $threadGuid . ')';
-                }
+                $replacement = '<!-- @thread:' . $threadGuid . ' -->' . $markdownQuote . '<!-- @/thread:' . $threadGuid . ' -->';
 
-                $newContent = substr_replace($versionContent, $replacement, $pos, strlen($quote));
+                $newContent = substr_replace($versionContent, $replacement, $pos, $matchLength);
                 $writeResult = file_put_contents($versionFilePath, $newContent);
                 if ($writeResult === false) {
                     doci_log('thread.link.write_error', ['path' => $versionFilePath], 'WARN');
                 } else {
                     doci_log('thread.link.success', [
                         'position' => $pos,
-                        'is_block' => $isBlock,
-                        'replacement_length' => strlen($replacement)
+                        'replacement_length' => strlen($replacement),
                     ]);
+                }
+
+                // Also wrap the live source document where the user actually made
+                // the selection -- the chip should appear in the surface the user
+                // was clicking on, not only in the snapshot. Skip when the source
+                // was already a version (wrap stays in that version only).
+                if ($sourceDoc['doc_type'] === 'document' || $sourceDoc['doc_type'] === 'thread') {
+                    $liveFilePath = __DIR__ . '/../files/' . $sourceDoc['path'];
+                    if (file_exists($liveFilePath)) {
+                        $liveContent = file_get_contents($liveFilePath);
+                        $liveMatch = find_thread_quote_in_source($liveContent, $quote, $occurrenceIndex);
+                        if ($liveMatch !== null) {
+                            $liveReplacement = '<!-- @thread:' . $threadGuid . ' -->' . $liveMatch['raw'] . '<!-- @/thread:' . $threadGuid . ' -->';
+                            $newLiveContent = substr_replace($liveContent, $liveReplacement, $liveMatch['start'], $liveMatch['length']);
+                            if (file_put_contents($liveFilePath, $newLiveContent) !== false) {
+                                doci_log('thread.link.live_propagated', [
+                                    'source_path' => $sourceDoc['path'],
+                                    'position' => $liveMatch['start'],
+                                ]);
+                            } else {
+                                doci_log('thread.link.live_write_error', ['path' => $liveFilePath], 'WARN');
+                            }
+                        } else {
+                            doci_log('thread.link.live_not_found', [
+                                'source_path' => $sourceDoc['path'],
+                            ], 'WARN');
+                        }
+                    }
                 }
             } elseif ($quote && $pos === false) {
                 doci_log('thread.link.not_found', [
                     'quote' => substr($quote, 0, 100),
-                    'context_before' => substr($contextBefore ?? '', 0, 50),
-                    'context_after' => substr($contextAfter ?? '', 0, 50)
+                    'occurrence' => $occurrenceIndex,
                 ], 'WARN');
+                throw new Exception('Could not locate the selected text in the document source -- the thread was not created. This usually happens on very long multi-section selections; try a shorter span.');
             }
 
             $pdo->commit();

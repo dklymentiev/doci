@@ -467,6 +467,10 @@ function cascadeDelete($pdo, $guid, $deletedBy, int $depth = 0): int {
         $count += cascadeDelete($pdo, $versionGuid, $deletedBy, $depth + 1);
     }
 
+    // If this is a thread, strip its wrap ([~quote](/guid) or block markers)
+    // from the parent version file on disk -- otherwise a dead chip lingers.
+    unwrapThreadInParent($pdo, $guid);
+
     // Delete this document
     $stmt = $pdo->prepare('
         UPDATE documents
@@ -483,4 +487,71 @@ function cascadeDelete($pdo, $guid, $deletedBy, int $depth = 0): int {
     }
 
     return $count;
+}
+
+/**
+ * Strip thread wrap markup from the parent version's markdown file.
+ *
+ * Two formats produced by thread.php at create time:
+ *   inline: [~quote](/threadGuid)
+ *   block:  <!-- @thread:threadGuid -->\nquote\n<!-- @/thread:threadGuid -->
+ *
+ * Both unwrap back to the bare quote text, leaving the version's body intact.
+ * No-op if the document is not a thread, has no parent, or the parent file is
+ * missing on disk.
+ */
+function unwrapThreadInParent(PDO $pdo, string $threadGuid): void {
+    $stmt = $pdo->prepare("
+        SELECT d.doc_type, p.path AS parent_path, o.path AS live_path
+        FROM documents d
+        LEFT JOIN documents p ON d.parent_guid = p.guid AND p.deleted_at IS NULL
+        LEFT JOIN documents o ON p.original_guid = o.guid AND o.deleted_at IS NULL
+        WHERE d.guid = :guid AND d.deleted_at IS NULL
+    ");
+    $stmt->execute(['guid' => $threadGuid]);
+    $row = $stmt->fetch();
+
+    if (!$row || $row['doc_type'] !== 'thread') {
+        return;
+    }
+
+    $targets = array_filter([$row['parent_path'] ?? null, $row['live_path'] ?? null]);
+    foreach ($targets as $relPath) {
+        unwrapThreadInFile(__DIR__ . '/../files/' . $relPath, $threadGuid, $relPath);
+    }
+}
+
+function unwrapThreadInFile(string $absPath, string $threadGuid, string $relForLog): void {
+    if (!file_exists($absPath)) {
+        return;
+    }
+    $content = file_get_contents($absPath);
+    if ($content === false) {
+        return;
+    }
+
+    $guidRe = preg_quote($threadGuid, '/');
+    $original = $content;
+
+    // Inline-comment wrap: <!-- @thread:GUID -->...<!-- @/thread:GUID --> -> bare content.
+    // Markers are now inserted with NO surrounding newlines, so the regex matches
+    // any content between them (including multi-paragraph spans).
+    $content = preg_replace(
+        '/<!-- @thread:' . $guidRe . ' -->(.*?)<!-- @\/thread:' . $guidRe . ' -->/s',
+        '$1',
+        $content
+    );
+
+    // Legacy inline-link wrap from before the format change: [~text](/guid).
+    // Stripped here so old artifacts unwrap cleanly on delete. Tempered
+    // quantifier prevents lazy match from crossing another wrap's closing.
+    $content = preg_replace('/\[~((?:(?!\]\().)+?)\]\(\/' . $guidRe . '\)/s', '$1', $content);
+
+    if ($content !== $original) {
+        file_put_contents($absPath, $content);
+        doci_log('documents.delete.unwrap', [
+            'thread_guid' => $threadGuid,
+            'path' => $relForLog,
+        ]);
+    }
 }

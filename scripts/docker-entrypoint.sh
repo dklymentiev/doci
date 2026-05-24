@@ -22,6 +22,12 @@ if [ ! -d "$FILES_DIR" ]; then
     chown www-data:www-data "$FILES_DIR"
 fi
 
+# Bind-mounted files from the host arrive owned by the host user (often
+# root inside the container), which leaves www-data unable to write.
+# DOCI writes through Apache (thread wraps on live docs, save.php edits,
+# git commits), so the whole tree has to belong to www-data.
+chown -R www-data:www-data "$FILES_DIR" 2>/dev/null || true
+
 if [ ! -d "$FILES_DIR/.git" ]; then
     echo "[doci-entrypoint] Initialising git repo at $FILES_DIR"
     cd "$FILES_DIR"
@@ -84,6 +90,18 @@ export HOME=/var/www
             git add -A 2>/dev/null
             git -c user.name=DOCI -c user.email="doci@$DOCI_DOMAIN" \
                 commit -q -m "Normalise internal links to GUID form" 2>/dev/null || true
+        fi
+        cd /
+    fi
+    # Pre-seed one thread + version on the landing so the version bar
+    # and quote anchor are visible out of the box. Idempotent.
+    if [ -f /var/www/html/scripts/seed-demo.sh ]; then
+        sh /var/www/html/scripts/seed-demo.sh 2>&1 | tail -5 || true
+        cd /var/www/html/files
+        if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+            git add -A 2>/dev/null
+            git -c user.name=DOCI -c user.email="doci@$DOCI_DOMAIN" \
+                commit -q -m "Seed demo thread + version" 2>/dev/null || true
         fi
         cd /
     fi

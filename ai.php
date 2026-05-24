@@ -163,7 +163,7 @@ function get_document_content(string $guid): ?string {
  * Build AI context from document data
  */
 function build_ai_context(array $document, array $hierarchy, string $content, ?string $parentContent = null): array {
-    // Build hierarchy path
+    // Build hierarchy path (titles only, breadcrumb-style)
     $hierarchyPath = array_map(function($h) {
         return $h['title'] ?? 'Untitled';
     }, $hierarchy);
@@ -173,13 +173,33 @@ function build_ai_context(array $document, array $hierarchy, string $content, ?s
         return '- /' . $h['guid'] . ' - ' . ($h['title'] ?? 'Untitled');
     }, $hierarchy);
 
+    // Build the meaningful ancestor chain: drop self, drop version snapshots
+    // (their content is captured by the next layer up that they snapshot).
+    // What remains is the alternating thread/document chain that an
+    // LLM actually needs to reason about a nested discussion.
+    $ancestors = [];
+    foreach ($hierarchy as $h) {
+        if ($h['guid'] === $document['guid']) continue;
+        if (($h['doc_type'] ?? '') === 'version') continue;
+        $ancestors[] = [
+            'guid'     => $h['guid'],
+            'doc_type' => $h['doc_type'] ?? 'document',
+            'title'    => $h['title'] ?? 'Untitled',
+            'quote'    => $h['quote'] ?? '',
+            'depth'    => $h['depth'] ?? 0,
+            'content'  => get_document_content($h['guid']),
+        ];
+    }
+
     return [
-        'title' => $document['title'] ?? 'Untitled',
-        'path' => implode(' > ', $hierarchyPath),
-        'links' => implode("\n", $hierarchyLinks),
-        'content' => $content,
+        'title'         => $document['title'] ?? 'Untitled',
+        'quote'         => $document['quote'] ?? '',
+        'path'          => implode(' > ', $hierarchyPath),
+        'links'         => implode("\n", $hierarchyLinks),
+        'content'       => $content,
         'parentContent' => $parentContent,
-        'doc_type' => $document['doc_type'] ?? 'document'
+        'doc_type'      => $document['doc_type'] ?? 'document',
+        'ancestors'     => $ancestors,
     ];
 }
 
@@ -189,35 +209,45 @@ function build_ai_context(array $document, array $hierarchy, string $content, ?s
 function build_system_prompt(array $context): string {
     $prompt = "You are a helpful assistant in the DOCI documentation system.\n\n";
 
-    $prompt .= "DOCUMENT HIERARCHY:\n";
-    $prompt .= $context['path'] . "\n\n";
+    $prompt .= "BREADCRUMB:\n" . $context['path'] . "\n\n";
 
     if (!empty($context['links'])) {
-        $prompt .= "LINKS TO PARENT DOCUMENTS:\n";
-        $prompt .= $context['links'] . "\n\n";
+        $prompt .= "ANCESTOR LINKS:\n" . $context['links'] . "\n\n";
     }
 
-    $prompt .= "CURRENT DOCUMENT: " . $context['title'] . "\n";
-    $prompt .= "TYPE: " . $context['doc_type'] . "\n\n";
-
-    if (!empty($context['parentContent'])) {
-        $prompt .= "PARENT DOCUMENT CONTENT:\n";
-        $prompt .= "---\n";
-        $prompt .= $context['parentContent'] . "\n";
-        $prompt .= "---\n\n";
+    // Walk the ancestor chain root-first so the LLM sees the original
+    // document first and drills down into nested threads. Each thread
+    // ancestor includes its anchor quote (what the previous discussion
+    // was about) and its full conversation log.
+    if (!empty($context['ancestors'])) {
+        // ancestors are ordered root-first because get_document_hierarchy
+        // returns depth DESC, and we preserve that order in build_ai_context.
+        foreach ($context['ancestors'] as $a) {
+            $label = $a['doc_type'] === 'thread'
+                ? sprintf("ANCESTOR THREAD (depth %d)", $a['depth'])
+                : sprintf("ROOT DOCUMENT (depth %d)", $a['depth']);
+            $prompt .= $label . ": " . $a['title'] . "\n";
+            if ($a['quote'] !== '') {
+                $prompt .= "Anchored to quote: \"" . $a['quote'] . "\"\n";
+            }
+            $prompt .= "Full content:\n---\n" . $a['content'] . "\n---\n\n";
+        }
     }
 
-    $prompt .= "CURRENT DOCUMENT CONTENT:\n";
-    $prompt .= "---\n";
-    $prompt .= $context['content'] . "\n";
-    $prompt .= "---\n\n";
+    // Current thread/doc — what the user is actually asking on.
+    $prompt .= "CURRENT " . strtoupper($context['doc_type']) . ": " . $context['title'] . "\n";
+    if (!empty($context['quote'])) {
+        $prompt .= "Anchored to quote: \"" . $context['quote'] . "\"\n";
+    }
+    $prompt .= "Full content:\n---\n" . $context['content'] . "\n---\n\n";
 
     $prompt .= "INSTRUCTIONS:\n";
-    $prompt .= "- Answer questions based on the document content above\n";
-    $prompt .= "- Use markdown formatting in your response\n";
-    $prompt .= "- Be concise but thorough\n";
-    $prompt .= "- If the answer is not in the document, say so\n";
-    $prompt .= "- You can reference parent documents by their links if relevant\n";
+    $prompt .= "- Answer the latest user message in the CURRENT discussion above.\n";
+    $prompt .= "- Use the ANCESTOR chain to understand what each layer of the discussion is about.\n";
+    $prompt .= "- Anchor quotes in each ancestor tell you what passage that layer was opened on.\n";
+    $prompt .= "- Reference specific ancestor threads or quotes if your answer builds on them.\n";
+    $prompt .= "- Use markdown formatting. Be concise but thorough.\n";
+    $prompt .= "- If the answer is not in any of the provided content, say so.\n";
 
     return $prompt;
 }
@@ -381,14 +411,10 @@ function append_ai_response_to_thread(string $threadGuid, string $content, strin
     $modelLabel = ucfirst($model);
     $timestamp = date('Y-m-d H:i');
 
-    // Build prompt details block (collapsible)
-    $promptDetails = "";
-    if (!empty($promptRecord)) {
-        $promptDetails = "<details>\n<summary>Prompt sent to AI</summary>\n" . $promptRecord . "\n</details>\n\n";
-    }
-
-    $aiSection = $promptDetails;
-    $aiSection .= "**AI Response** ({$modelLabel}, {$timestamp})\n\n";
+    // Prompt record stays in doci_log only -- writing it into the thread file
+    // leaks the entire ancestor chain into the user-visible document, and any
+    // <details> markup inside it breaks the wrapping <details> by closing early.
+    $aiSection  = "**AI Response** ({$modelLabel}, {$timestamp})\n\n";
     $aiSection .= $content . "\n";
 
     // Replace placeholder with actual response
