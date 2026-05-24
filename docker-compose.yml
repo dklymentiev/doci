@@ -27,6 +27,9 @@ services:
       # everything else has it stripped. Empty = no proxy trusted
       # (API-key auth only).
       - DOCI_TRUSTED_PROXIES=${DOCI_TRUSTED_PROXIES:-}
+      # CSRF enforcement on browser-flow POST/PUT/DELETE. On by
+      # default; disable only for API-key-only deployments.
+      - DOCI_CSRF_ENABLED=${DOCI_CSRF_ENABLED:-true}
       # Verbose JSON-line logging. Security events log regardless.
       - DOCI_DEBUG_LOG=${DOCI_DEBUG_LOG:-false}
       # Domain for git commits

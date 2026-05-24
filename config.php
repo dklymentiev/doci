@@ -346,10 +346,10 @@ function validate_csrf_token(): bool {
  * Call this at the start of POST/PUT/DELETE handlers
  */
 function require_csrf_token(): void {
-    // CSRF enforcement is opt-in while the gate is being hardened
-    // (see docs/04-roadmap.md Phase 5). Set DOCI_CSRF_ENABLED=true to
-    // enforce browser-flow CSRF checks. Default = disabled (insecure).
-    if (strtolower((string) getenv('DOCI_CSRF_ENABLED')) !== 'true') {
+    // CSRF enforcement is ON unless explicitly disabled. Unset env
+    // = enforce; the only opt-out is DOCI_CSRF_ENABLED=false for
+    // API-key-only deployments that never expose the browser flow.
+    if (strtolower((string) getenv('DOCI_CSRF_ENABLED')) === 'false') {
         return;
     }
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {

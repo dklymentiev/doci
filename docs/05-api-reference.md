@@ -20,9 +20,8 @@ Every request must pass one of two checks:
 
 CSRF token (`X-CSRF-Token` header or `csrf_token` body field) is required
 for POST/PUT/DELETE when authenticated via `Remote-User`. API-key callers
-are exempt — they already prove a secret. (Note: enforcement is opt-in via
-`DOCI_CSRF_ENABLED=true`; default is disabled while the gate is being
-hardened in Phase 5 of the [roadmap](04-roadmap.md).)
+are exempt — they already prove a secret. (Enforcement is on by default;
+set `DOCI_CSRF_ENABLED=false` only for API-key-only deployments.)
 
 ## HTTP API — endpoint table
 

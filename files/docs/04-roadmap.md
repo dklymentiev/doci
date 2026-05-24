@@ -97,8 +97,7 @@ work, but the CHANGELOG claims they're "planned" — fix the claim, fix
 the gaps.
 
 **Deliverables**
-- [ ] Make `DOCI_CSRF_ENABLED=true` the default in `config.php::require_csrf_token`
-  (today the env flag opts in; flip the default once browser callers are verified)
+- [x] Make `DOCI_CSRF_ENABLED=true` the default in `config.php::require_csrf_token`
 - [ ] Threads + versions tabs explicitly listed in CHANGELOG under v0.1
 - [ ] Mobile layout pass on document, thread, and version pages
 - [ ] Empty-state copy on root when `files/` is empty (post-wipe)

@@ -76,11 +76,13 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   unaffected.
 
 ### Security
-- CSRF enforcement is now an explicit opt-in via `DOCI_CSRF_ENABLED=true`.
-  The previous behaviour (a hidden `return;` at the top of
-  `require_csrf_token()`) remains the default while the gate is being
-  hardened in Phase 5 of the roadmap, but the flag is documented in
-  `.env.example` so the disabled-by-default state is no longer silent.
+- CSRF enforcement is now ON by default. The previous behaviour was a
+  hidden `return;` at the top of `require_csrf_token()`; the v0.2 cycle
+  briefly made it env-gated and opt-in, but the pre-release audit
+  flagged opt-in as a misconfiguration trap and the default is now
+  enforce. API-key callers remain exempt automatically; set
+  `DOCI_CSRF_ENABLED=false` only for API-key-only deployments that
+  never expose the browser flow.
 
 ## [0.1.0] - 2026-05-22
 
