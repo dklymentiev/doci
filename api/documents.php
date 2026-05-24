@@ -67,7 +67,11 @@ try {
 
 /**
  * POST - Create new document
- * Body: {path, content, title?, summary?, tags?, created_by?}
+ * Body: {path, content, title?, summary?, tags?}
+ *
+ * created_by is taken from the authenticated session/API-key user;
+ * any value in the request body is ignored (attribution cannot be
+ * spoofed by API clients).
  */
 function handleCreate($pdo) {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -81,7 +85,11 @@ function handleCreate($pdo) {
     $title = $input['title'] ?? null;
     $summary = $input['summary'] ?? null;
     $tags = $input['tags'] ?? null;
-    $createdBy = $input['created_by'] ?? get_current_username() ?? 'system';
+    if ($tags !== null) {
+        $tags = validate_tags($tags);
+    }
+    // Attribution is server-side only. Ignore any created_by in body.
+    $createdBy = get_current_username() ?? 'system';
 
     doci_log('documents.create.start', [
         'path' => $path,
@@ -265,6 +273,10 @@ function handleGet($pdo) {
 /**
  * PUT - Update document
  * Body: {guid, content?, title?, summary?, tags?}
+ *
+ * updated_by is taken from the authenticated session/API-key user;
+ * any value in the request body is ignored (attribution cannot be
+ * spoofed by API clients).
  */
 function handleUpdate($pdo) {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -278,7 +290,11 @@ function handleUpdate($pdo) {
     $title = $input['title'] ?? null;
     $summary = $input['summary'] ?? null;
     $tags = $input['tags'] ?? null;
-    $updatedBy = $input['updated_by'] ?? get_current_username() ?? 'system';
+    if ($tags !== null) {
+        $tags = validate_tags($tags);
+    }
+    // Attribution is server-side only. Ignore any updated_by in body.
+    $updatedBy = get_current_username() ?? 'system';
 
     if (!$guid) {
         throw new Exception('guid is required');

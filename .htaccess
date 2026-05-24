@@ -1,5 +1,13 @@
 RewriteEngine On
 
+# Deny direct access to sensitive paths. .git/ contains the
+# repository internals (commit objects, FETCH_HEAD, potentially
+# embedded credentials in remotes/config) and files/.data/ contains
+# runtime state (thread / version snapshots, pending AI context
+# blobs).
+RedirectMatch 404 ^/\.git
+RedirectMatch 404 ^/files/\.data/
+
 # Security headers
 Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'"
 Header set X-Content-Type-Options "nosniff"
