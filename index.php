@@ -179,6 +179,20 @@ $markdownFile = __DIR__ . '/files/' . $requestPath . '.md';
 $dirPath = __DIR__ . '/files/' . $requestPath;
 $htmlFile = __DIR__ . '/files/' . $requestPath . '.html';
 
+// Root-document fallback: if `files/index.md` is missing but
+// `files/README.md` is present, treat README as the root document so
+// the project can ship a single README that serves as both
+// /README.html and /. $requestPath stays as 'index' so navigation /
+// breadcrumb / sidebar special-cases continue to behave as "root".
+if ($requestPath === 'index' && !file_exists($markdownFile)
+    && file_exists(__DIR__ . '/files/README.md')) {
+    $markdownFile = __DIR__ . '/files/README.md';
+    $documentRecord = get_document_by_path('README.md');
+    if ($documentRecord) {
+        $documentHierarchy = get_document_hierarchy($documentRecord['guid']);
+    }
+}
+
 // Check if it's an HTML file. Wrap it in the DOCI shell and render the
 // HTML inside a sandboxed iframe -- same mechanism used for .md files
 // whose content is a full HTML document. Pass ?raw=1 in the URL if you
@@ -189,6 +203,9 @@ if (file_exists($htmlFile) && is_file($htmlFile)) {
 
     // Security check: ensure file is within /files/ directory
     if ($realHtmlPath !== false && strpos($realHtmlPath, $filesDir) === 0) {
+        // ?raw=1 -> serve file untouched (skip DOCI chrome).
+        // Default -> render the HTML inline inside DOCI's chrome
+        // (no sandboxed iframe; see render_html_inline).
         if (!empty($_GET['raw'])) {
             header('Content-Type: text/html; charset=UTF-8');
             readfile($htmlFile);
@@ -198,7 +215,7 @@ if (file_exists($htmlFile) && is_file($htmlFile)) {
         require_once __DIR__ . '/lib/markdown.php';
         $htmlSource = file_get_contents($htmlFile);
         $title = extract_title($htmlSource, basename($requestPath));
-        $htmlContent = render_html_document($htmlSource);
+        $htmlContent = render_html_inline($htmlSource);
 
         render_page($title, $htmlContent, $requestPath, true, null,
             $documentHierarchy, $documentRecord);
@@ -241,13 +258,14 @@ if (is_dir($dirPath)) {
     // dashboards, etc.
     $folderIndexMd = $dirPath . '/index.md';
     $folderIntroHtml = '';
+    $folderIndexRecord = null;
     if (file_exists($folderIndexMd) && is_file($folderIndexMd)) {
         $realIndex = realpath($folderIndexMd);
         if ($realIndex !== false && strpos($realIndex, $filesDir) === 0) {
             require_once __DIR__ . '/lib/markdown.php';
             $folderIndexContent = file_get_contents($folderIndexMd);
             if (doci_is_html_document($folderIndexContent)) {
-                $folderIntroHtml = render_html_document($folderIndexContent);
+                $folderIntroHtml = render_html_inline($folderIndexContent);
             } else {
                 $folderIntroHtml = parse_markdown($folderIndexContent);
             }
@@ -258,6 +276,11 @@ if (is_dir($dirPath)) {
             if ($maybeTitle && $maybeTitle !== $dirTitle) {
                 $dirTitle = $maybeTitle;
             }
+            // Pull the index.md's DB row so the version bar (and any
+            // future doc-aware chrome) can render against the folder
+            // page as if the user had navigated to /<guid> directly.
+            $folderIndexRelPath = ltrim(str_replace($filesDir, '', $realIndex), '/');
+            $folderIndexRecord = get_document_by_path($folderIndexRelPath);
         }
     }
 
@@ -293,7 +316,7 @@ if (is_dir($dirPath)) {
         exit;
     }
 
-    render_page($dirTitle, $htmlContent, $displayPath);
+    render_page($dirTitle, $htmlContent, $displayPath, true, null, [], $folderIndexRecord);
     exit;
 }
 
@@ -333,35 +356,22 @@ $requestedPath = $requestPath;
 // Extract title from markdown or use filename
 $title = extract_title($markdownContent, basename($requestPath));
 
-// Parse content to HTML. HTML documents render in a sandboxed iframe
-// (see render_html_document); everything else goes through Markdown,
-// which escapes raw HTML via Parsedown SafeMode.
+// Parse content to HTML. HTML documents render inline inside DOCI
+// chrome (see render_html_inline); everything else goes through
+// Markdown, which escapes raw HTML via Parsedown SafeMode.
 if (doci_is_html_document($markdownContent)) {
-    $htmlContent = render_html_document($markdownContent);
+    $htmlContent = render_html_inline($markdownContent);
 } else {
     $htmlContent = parse_markdown($markdownContent);
 }
 
 // File path indicator removed - metadata shown at bottom instead
 
-// Append folder/file cards at the BOTTOM of the homepage as a compact
-// two-column grid. (Previously prepended at the top with a "Browse
-// Documents" heading -- they pushed the showcase content down and
-// stretched too wide.)
-if ($requestPath === 'index') {
-    $folderCards = render_folder_cards(__DIR__ . '/files', false);
-    $fileCards = render_file_cards(__DIR__ . '/files', false);
-
-    if (!empty($folderCards) || !empty($fileCards)) {
-        $cardsSection  = '<h2 class="browse-heading">Browse</h2>' . "\n";
-        $cardsSection .= '<div class="folder-cards folder-cards-compact">' . "\n";
-        $cardsSection .= $folderCards;
-        $cardsSection .= $fileCards;
-        $cardsSection .= '</div>' . "\n";
-
-        $htmlContent = $htmlContent . $cardsSection;
-    }
-}
+// The landing (`files/index.md`) is curated by hand and demonstrates
+// every feature inline -- it does not need a Browse grid appended
+// below. Folder/file navigation lives in the left sidebar where it
+// belongs. Sub-directory index pages still get cards (see the
+// $requestedIsDirectory branch around line 233).
 
 // Handle AJAX request - return JSON with content and metadata
 if ($isAjax) {
@@ -375,14 +385,17 @@ if ($isAjax) {
     // Build metadata for response
     $mdFilePath = __DIR__ . '/files/' . $requestPath . '.md';
     $isEditable = $requestPath !== 'index' && !empty($requestPath) && file_exists($mdFilePath);
+    require_once __DIR__ . '/lib/key-documents.php';
+    $docGuid = $documentRecord['guid'] ?? null;
     $meta = [
         'path' => $requestPath . '.md',
-        'guid' => $documentRecord['guid'] ?? null,
+        'guid' => $docGuid,
         'isThread' => ($documentRecord['doc_type'] ?? null) === 'thread',
         'isDirectory' => false,
         'isEditable' => $isEditable,
         'editPath' => $isEditable ? $requestPath : '',
         'rawContent' => $isEditable ? file_get_contents($mdFilePath) : '',
+        'isKey' => $docGuid ? is_key_document($docGuid) : false,
     ];
 
     // Add thread-specific info
@@ -404,6 +417,7 @@ if ($isAjax) {
         'title' => $title,
         'content' => $htmlContent,
         'breadcrumbs' => render_breadcrumbs($requestPath),
+        'versionBar' => build_version_bar_html($documentRecord),
         'path' => $requestPath,
         'meta' => $meta,
     ]);

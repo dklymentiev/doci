@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 80" role="img" aria-label="Sunfield Farm illustration">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#f3e9c8"/>
+      <stop offset="100%" stop-color="#f8f5f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="80" fill="url(#sky)"/>
+  <!-- sun -->
+  <circle cx="120" cy="38" r="18" fill="#e8a93b"/>
+  <!-- distant hill -->
+  <path d="M0 70 Q 180 30 360 60 T 720 55 L 720 80 L 0 80 Z" fill="#a8b87a"/>
+  <!-- nearer field with rows -->
+  <path d="M0 80 L 0 72 Q 180 55 360 70 T 720 65 L 720 80 Z" fill="#5a7d3a"/>
+  <g stroke="#3e5a26" stroke-width="0.6" opacity="0.5">
+    <line x1="0"   y1="76" x2="720" y2="76"/>
+    <line x1="0"   y1="78" x2="720" y2="78"/>
+  </g>
+</svg>

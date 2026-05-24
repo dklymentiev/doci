@@ -43,6 +43,77 @@ function render_breadcrumbs(string $path): string {
  * @param string $content HTML content
  * @param string $path Current path for breadcrumbs
  */
+/**
+ * Build the depth-chain bar -- one chip per level from root document
+ * to the current page. Each chip = one nestable layer of discussion.
+ *
+ * Layers are: root document, every thread ancestor in the current
+ * chain. Version snapshots are infrastructure -- they're filtered out
+ * because the user doesn't think in terms of "version of thread of
+ * version of document". They think in terms of "thread -> sub-thread".
+ *
+ * Labels:
+ *   Root  -- the original document at the top of the chain
+ *   T-N   -- N-th thread when walking root -> current
+ *
+ * Click a chip = jump to that layer. Active chip = current page.
+ * Hover shows the layer's title + author + timestamp.
+ *
+ * Sibling threads (multiple threads anchored on the same document)
+ * are NOT shown here -- they live as purple pills in the body text
+ * and that's the canonical entry point for branching sideways.
+ */
+function build_version_bar_html(?array $documentRecord): string {
+    if (!$documentRecord) return '';
+
+    $chain = get_document_hierarchy($documentRecord['guid']);
+    if (empty($chain)) return '';
+
+    // chain is depth DESC -> root first, current last. Keep only the
+    // discussion layers (document + thread). Drop version rows (snapshot
+    // bookkeeping) and folder rows (filesystem path -- belongs to the
+    // breadcrumb, not to the depth bar).
+    $levels = array_values(array_filter(
+        $chain,
+        function ($h) {
+            $t = $h['doc_type'] ?? '';
+            return $t === 'document' || $t === 'thread';
+        }
+    ));
+    if (empty($levels)) return '';
+
+    // Single-layer pages (a live root with no threads in this chain
+    // yet) get just a "Root" chip -- still useful so the bar layout
+    // is consistent across page types.
+    $currentGuid = $documentRecord['guid'];
+    $threadIndex = 0;
+
+    ob_start();
+    ?>
+            <div class="version-bar">
+                <span class="version-bar-label">Depth:</span>
+                <?php foreach ($levels as $entry):
+                    $isDoc = (($entry['doc_type'] ?? '') === 'document');
+                    if ($isDoc) {
+                        $label = 'Root';
+                    } else {
+                        $threadIndex++;
+                        $label = 'T-' . $threadIndex;
+                    }
+                    $isActive = ($entry['guid'] === $currentGuid);
+                    $tooltip  = trim(($entry['title'] ?? '') . "\n" . ($entry['quote'] ?? ''));
+                ?>
+                <a href="/<?= htmlspecialchars($entry['guid']) ?>"
+                   class="version-btn <?= $isActive ? 'active' : '' ?>"
+                   title="<?= htmlspecialchars($tooltip) ?>">
+                    <span class="version-author"><?= $label ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
+    <?php
+    return ob_get_clean();
+}
+
 function render_page(string $title, string $content, string $path, bool $showRecentSidebar = true, ?string $rawContent = null, array $hierarchy = [], ?array $documentRecord = null): void {
     $documentGuid = $documentRecord['guid'] ?? null;
     $username = get_current_username();
@@ -71,6 +142,35 @@ function render_page(string $title, string $content, string $path, bool $showRec
             $originalDoc = get_original_document($documentGuid);
             if ($originalDoc) {
                 $versions = get_document_versions($originalDoc['guid']);
+            }
+        } elseif ($docType === 'thread') {
+            // Thread is anchored to a version of some root doc/thread.
+            // Walk the full hierarchy (migration 003 follows both
+            // parent_guid and original_guid) and surface the same
+            // version-bar the root document would show, with the active
+            // chip marking the version this thread sits on.
+            $chain = get_document_hierarchy($documentGuid);
+            foreach ($chain as $h) {
+                if (($h['doc_type'] ?? '') === 'document') {
+                    $originalDoc = get_document_by_guid($h['guid']);
+                    break;
+                }
+            }
+            if ($originalDoc) {
+                $versions = get_document_versions($originalDoc['guid']);
+                // The active version is the root-level version in the
+                // chain (the snapshot of the root doc that this thread
+                // line descends from). Find the version row whose
+                // original_guid matches the root we just resolved.
+                foreach ($chain as $h) {
+                    if (($h['doc_type'] ?? '') === 'version') {
+                        $ver = get_document_by_guid($h['guid']);
+                        if ($ver && ($ver['original_guid'] ?? null) === $originalDoc['guid']) {
+                            $currentVersionGuid = $ver['guid'];
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -193,7 +293,7 @@ function render_page(string $title, string $content, string $path, bool $showRec
 
     <div class="layout">
         <aside class="sidebar" id="sidebar">
-            <div class="logo-row"><div class="sidebar-logo"><a href="/">DOCI</a></div><button class="theme-toggle" onclick="toggleTheme()" title="Switch theme"><span class="theme-toggle-label">Theme</span></button></div>
+            <div class="logo-row"><div class="sidebar-logo"><a href="/">DOCI</a></div><div class="logo-row-toggles"><label class="key-switch canonical-filter-switch" title="Show only canonical documents in the tree"><input type="checkbox" id="canonical-filter-toggle" onchange="toggleCanonicalOnly(this.checked)"><span class="key-switch-slider"></span><span class="key-switch-label">Canonical</span></label><button class="theme-toggle" onclick="toggleTheme()" title="Switch theme"><span class="theme-toggle-label">Theme</span></button></div></div>
             <div class="sidebar-section">Navigation</div>
             <nav class="sidebar-nav">
                 <?= $fileTree ?>
@@ -235,7 +335,11 @@ function render_page(string $title, string $content, string $path, bool $showRec
                     $isKey = is_key_document($documentGuid);
                 ?>
                 <span class="meta-sep">|</span>
-                <button id="key-doc-toggle" class="key-toggle <?= $isKey ? 'is-key' : '' ?>" data-guid="<?= htmlspecialchars($documentGuid) ?>" title="<?= $isKey ? 'Marked as key document -- click to manage' : 'Mark as key document' ?>"><?= $isKey ? '★' : '☆' ?></button>
+                <label class="key-switch" title="<?= $isKey ? 'Marked as canonical' : 'Mark as canonical' ?>">
+                    <input type="checkbox" id="key-doc-toggle" data-guid="<?= htmlspecialchars($documentGuid) ?>"<?= $isKey ? ' checked' : '' ?>>
+                    <span class="key-switch-slider"></span>
+                    <span class="key-switch-label">Canonical</span>
+                </label>
                 <?php endif; ?>
                 <?php
                 $commits = git_get_file_history($path . '.md', 3);
@@ -262,26 +366,7 @@ function render_page(string $title, string $content, string $path, bool $showRec
                 <?php endif; ?>
             </div>
 
-            <?php if ($originalDoc && !empty($versions)): ?>
-            <!-- Version bar - shows all versions for this document -->
-            <div class="version-bar">
-                <span class="version-bar-label">Versions:</span>
-                <a href="/<?= htmlspecialchars($originalDoc['guid']) ?>"
-                   class="version-btn <?= !$isVersion ? 'active' : '' ?>">
-                    <span class="version-author">Original</span>
-                </a>
-                <?php foreach ($versions as $i => $ver):
-                    $initials = strtoupper(substr($ver['created_by'] ?? 'UN', 0, 2));
-                    $versionLabel = $initials . '-' . ($i + 1);
-                ?>
-                <a href="/<?= htmlspecialchars($ver['guid']) ?>"
-                   class="version-btn <?= ($currentVersionGuid === $ver['guid']) ? 'active' : '' ?>"
-                   title="<?= htmlspecialchars($ver['created_by']) ?> - <?= date('M j H:i', strtotime($ver['created_at'])) ?>">
-                    <span class="version-author"><?= $versionLabel ?></span>
-                </a>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
+            <?= build_version_bar_html($documentRecord) ?>
 
             <article class="markdown-content markdown-body" id="view-mode">
                 <?= $content ?>
@@ -377,11 +462,13 @@ function render_page(string $title, string $content, string $path, bool $showRec
 <script>
 var THEMES=['dark','light'],THEME_NAMES={'dark':'Dark','light':'Light'};
 function getTheme(){var s=localStorage.getItem('doci_theme');return s==='light'?'light':'dark'}
-function applyTheme(t){document.documentElement.dataset.theme=t;var l=document.querySelector('.theme-toggle-label');if(l)l.textContent=THEME_NAMES[t]||'Dark';syncIframeTheme(t)}
-function syncIframeTheme(t){document.querySelectorAll('iframe.doci-html-doc').forEach(function(f){try{f.contentWindow.postMessage({docTheme:t},'*')}catch(e){}})}
-document.addEventListener('load',function(e){if(e.target&&e.target.classList&&e.target.classList.contains('doci-html-doc')){try{e.target.contentWindow.postMessage({docTheme:getTheme()},'*')}catch(err){}}},true);
+function applyTheme(t){document.documentElement.dataset.theme=t;var l=document.querySelector('.theme-toggle-label');if(l)l.textContent=THEME_NAMES[t]||'Dark'}
 function toggleTheme(){var c=getTheme(),n=THEMES[(THEMES.indexOf(c)+1)%THEMES.length];localStorage.setItem('doci_theme',n);applyTheme(n)}
 applyTheme(getTheme());
+function getCanonicalOnly(){return localStorage.getItem('doci_canonical_only')==='1'}
+function applyCanonicalOnly(on){document.body.classList.toggle('canonical-only',on);var c=document.getElementById('canonical-filter-toggle');if(c)c.checked=on}
+function toggleCanonicalOnly(on){if(typeof on!=='boolean')on=!getCanonicalOnly();localStorage.setItem('doci_canonical_only',on?'1':'0');applyCanonicalOnly(on)}
+document.addEventListener('DOMContentLoaded',function(){applyCanonicalOnly(getCanonicalOnly())});
 </script>
 <script>
 (function(){
@@ -420,6 +507,11 @@ function render_file_tree(string $basePath, string $urlPath = '', string $curren
 
     foreach ($items as $item) {
         if ($item[0] === '.' || $item === 'assets') continue;
+        // Hide *every* index.md / index.html from the tree -- they are
+        // the implicit landing of their level (root = /, sub-folder
+        // accessed by clicking the folder name), so listing them as a
+        // separate child duplicates the parent click target.
+        if ($item === 'index.md' || $item === 'index.html') continue;
         $fullPath = $realBasePath . '/' . $item;
         $itemUrl = $urlPath ? $urlPath . '/' . $item : $item;
 
@@ -435,48 +527,61 @@ function render_file_tree(string $basePath, string $urlPath = '', string $curren
     ksort($folders);
     ksort($files);
 
-    // Render folders
+    // Render folders -- two-column row: icon cell (fixed) + title cell (depth-padded).
     foreach ($folders as $name => $data) {
         $children = render_file_tree($data['path'], $data['url'], $currentPath, $depth + 1);
         if (!$children) continue;
 
-        // Auto-expand if current path is this folder or inside it
-        $isExpanded = $currentPath && ($currentPath === $data['url'] || strpos($currentPath, $data['url'] . '/') === 0);
+        $hasKeyDescendant = strpos($children, 'is-key') !== false;
+        $isCurrentPath = $currentPath && ($currentPath === $data['url'] || strpos($currentPath, $data['url'] . '/') === 0);
+        $isExpanded = $isCurrentPath || $hasKeyDescendant;
         $openClass = $isExpanded ? ' open' : '';
+        $keyClass = $hasKeyDescendant ? ' has-key' : '';
         $toggleIcon = $isExpanded ? '[-]' : '[+]';
+        $iconCell = '<span class="nav-icon-cell"></span>';
 
         $title = ucwords(str_replace(['-', '_'], ' ', $name));
-        $html .= '<div class="nav-folder' . $openClass . '" style="padding-left:' . $pad . 'px">';
-        $html .= '<span class="nav-folder-toggle" onclick="this.parentElement.classList.toggle(\'open\'); this.textContent = this.textContent === \'[+]\' ? \'[-]\' : \'[+]\'">' . $toggleIcon . '</span> ';
+        $html .= '<div class="nav-folder' . $openClass . $keyClass . '">';
+        $html .= $iconCell;
+        $html .= '<span class="nav-title-cell" style="padding-left:' . $pad . 'px">';
+        $html .= '<span class="nav-folder-toggle" onclick="this.parentElement.parentElement.classList.toggle(\'open\'); this.textContent = this.textContent === \'[+]\' ? \'[-]\' : \'[+]\'">' . $toggleIcon . '</span> ';
         $html .= '<a href="/' . htmlspecialchars($data['url']) . '.html" class="nav-folder-link">' . htmlspecialchars($title) . '</a>';
+        $html .= '</span>';
         $html .= '<div class="nav-folder-children">' . $children . '</div>';
         $html .= '</div>';
     }
 
     // Render files
     require_once __DIR__ . '/key-documents.php';
-    static $pathToGuid = null;
-    if ($pathToGuid === null) {
-        $pathToGuid = [];
+    static $pathInfo = null;
+    if ($pathInfo === null) {
+        $pathInfo = [];
         try {
             $pdo = get_db();
-            $stmt = $pdo->query("SELECT path, guid FROM documents WHERE deleted_at IS NULL AND doc_type IN ('document','version')");
+            $stmt = $pdo->query("SELECT path, guid, title FROM documents WHERE deleted_at IS NULL AND doc_type IN ('document','version')");
             if ($stmt) {
                 while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $pathToGuid[$r['path']] = $r['guid'];
+                    $pathInfo[$r['path']] = ['guid' => $r['guid'], 'title' => $r['title']];
                 }
             }
         } catch (Throwable $e) {}
     }
     foreach ($files as $name => $data) {
-        $title = ucwords(str_replace(['-', '_'], ' ', $name));
-        $activeClass = $data['active'] ? ' nav-active' : '';
-        // Star indicator if this file's GUID is marked key in any domain.
         $mdPath = $data['mdPath'] ?? '';
-        $guid = $pathToGuid[$mdPath] ?? null;
-        $star = ($guid && is_key_document($guid)) ? '<span class="nav-key-star" title="Key document">★</span> ' : '';
-        $html .= '<div class="nav-file' . $activeClass . '" style="padding-left:' . $pad . 'px">';
-        $html .= '<a href="/' . htmlspecialchars($data['url']) . '.html">' . $star . htmlspecialchars($title) . '</a>';
+        // Prefer the document's own title; fall back to the raw filename
+        // (NOT humanized — humanization mangles dates like 2026-05-12).
+        $dbTitle = $pathInfo[$mdPath]['title'] ?? null;
+        $title = ($dbTitle !== null && $dbTitle !== '') ? $dbTitle : $name;
+        $activeClass = $data['active'] ? ' nav-active' : '';
+        $guid = $pathInfo[$mdPath]['guid'] ?? null;
+        $isKey = $guid && is_key_document($guid);
+        $keyClass = $isKey ? ' is-key' : '';
+        $iconCell = '<span class="nav-icon-cell"></span>';
+        $html .= '<div class="nav-file' . $activeClass . $keyClass . '">';
+        $html .= $iconCell;
+        $html .= '<span class="nav-title-cell" style="padding-left:' . $pad . 'px">';
+        $html .= '<a href="/' . htmlspecialchars($data['url']) . '.html">' . htmlspecialchars($title) . '</a>';
+        $html .= '</span>';
         $html .= '</div>';
     }
 

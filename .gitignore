@@ -30,17 +30,13 @@ composer.phar
 test-*.php
 debug.php
 
-# Production data (keep directory structure only)
+# Runtime document storage. The hidden dot-directories underneath
+# files/ are operator state (the git working tree under .git/, thread
+# and version snapshots under .data/, etc.) and are never committed.
+# Seed content that ships with the OSS repo is whitelisted explicitly.
 files/*
 !files/.gitkeep
-!files/index.md
-!files/inbox/
-files/inbox/*
-!files/inbox/.gitkeep
-!files/inbox/20260518-grant-deadline.md
-!files/inbox/20260520-tractor-noise.md
-!files/example/
+!files/README.md
 !files/docs/
-!files/tour/
-!files/demo-farm/
-!files/.showcase/
+!files/farm/
+!files/assets/

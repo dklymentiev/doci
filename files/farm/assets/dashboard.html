@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunfield -- ops dashboard</title>
+<style>
+  :root {
+    /* Bg / surface / text defer to DOCI's theme vars when embedded;
+       the listed values are the standalone fallbacks. */
+    --bg:      var(--bg-main, #f6f5f1);
+    --card:    var(--bg-card, #ffffff);
+    --text:    var(--text-primary, #2c3e1f);
+    --muted:   var(--text-muted, #777);
+    --bg-pattern: rgba(90, 125, 58, 0.04);
+    --accent: #5a7d3a;
+    --accent-soft: rgba(90, 125, 58, 0.18);
+    --neg: #a33;
+    --warn: #c4831f;
+    /* palette shared by the donut + legend, in declaration order */
+    --c1: #d33b58;
+    --c2: #e89534;
+    --c3: #5a7d3a;
+    --c4: #c4831f;
+    --c5: #8a6cb0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      var(--bg-main, #14151a);
+      --card:    var(--bg-card, #1e1f23);
+      --text:    var(--text-primary, #e6e8eb);
+      --muted:   var(--text-muted, #8a8f96);
+      --bg-pattern: rgba(149, 196, 106, 0.04);
+      --accent: #95c46a;
+      --accent-soft: rgba(149, 196, 106, 0.22);
+      --neg: #e25c5c;
+      --warn: #d49c3d;
+      --c1: #e25c75;
+      --c2: #f0a850;
+      --c3: #95c46a;
+      --c4: #d49c3d;
+      --c5: #a685c8;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    background-image:
+      linear-gradient(var(--bg-pattern) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-pattern) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Header bar */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    border-radius: 4px;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+  }
+  .brand-text { display: flex; flex-direction: column; gap: 2px; }
+  .brand-title { font-size: 18px; font-weight: 600; line-height: 1; }
+  .brand-sub { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .header-meta { display: flex; align-items: center; gap: 20px; font-size: 11px; color: var(--muted); }
+  .header-meta strong { color: var(--text); font-weight: 600; }
+  .live { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); }
+  .live::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 var(--accent-soft);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 var(--accent-soft); }
+    70%  { box-shadow: 0 0 0 8px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+
+  /* KPI tiles */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 16px;
+  }
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .stat-value { font-size: 24px; font-weight: 600; margin-top: 2px; letter-spacing: -0.01em; }
+  .stat-delta { font-size: 11px; color: var(--accent); margin-top: 3px; }
+  .stat-delta.neg { color: var(--neg); }
+  .stat-delta.warn { color: var(--warn); }
+
+  /* Two-column row */
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 18px;
+  }
+  .card h3 {
+    margin: 0 0 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  /* Bar chart */
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 140px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2px;
+  }
+  .bar {
+    flex: 1;
+    background: var(--accent);
+    border-radius: 3px 3px 0 0;
+    position: relative;
+    min-height: 4px;
+  }
+  .bar.dip { background: var(--c2); }
+  .bar::after {
+    content: attr(data-val);
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .bars-axis {
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Donut */
+  .donut { width: 86px; height: 86px; flex-shrink: 0; }
+  .donut-trio { display: flex; gap: 8px; justify-content: space-between; }
+  .donut-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+  .donut-tile.is-focus .donut { width: 96px; height: 96px; }
+  .donut-cap { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.1; }
+  .donut-month { font-size: 11px; font-weight: 600; }
+  .donut-tile.is-focus .donut-month { color: var(--accent); }
+  .donut-amt { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .legend-flat {
+    display: flex; flex-wrap: wrap; gap: 4px 14px;
+    font-size: 10px;
+    padding-top: 10px;
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-row { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .legend-label { white-space: nowrap; }
+
+  /* Lists */
+  .list { display: flex; flex-direction: column; }
+  .list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .list-item:first-child { border-top: 0; }
+  .list-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .list-dot.warn { background: var(--warn); }
+  .list-dot.neg  { background: var(--neg); }
+  .list-main { flex: 1; min-width: 0; }
+  .list-title { font-weight: 500; }
+  .list-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .list-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .list-badge.warn { background: rgba(196, 131, 31, 0.18); color: var(--warn); }
+  .list-badge.neg  { background: rgba(163, 51, 51, 0.18); color: var(--neg); }
+
+  /* Footer */
+  .page-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .page-footer a { color: var(--accent); text-decoration: none; }
+  .page-footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 880px) {
+    .page { padding: 16px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .row-2 { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-header">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div class="brand-text">
+        <div class="brand-title">Sunfield Farm — Operations</div>
+        <div class="brand-sub">Spring 2026 · CSA wk 19</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span><strong>Field 3</strong> · harvest active</span>
+      <span>Updated <strong>5 min ago</strong></span>
+      <span class="live">Live</span>
+    </div>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">CSA members</div><div class="stat-value">328</div><div class="stat-delta">+24 this quarter</div></div>
+    <div class="stat"><div class="stat-label">Revenue YTD</div><div class="stat-value">$142.8k</div><div class="stat-delta">+18% YoY</div></div>
+    <div class="stat"><div class="stat-label">Harvest (lb, week)</div><div class="stat-value">3,860</div><div class="stat-delta">target 3,500</div></div>
+    <div class="stat"><div class="stat-label">Open SOPs</div><div class="stat-value">12</div><div class="stat-delta neg">3 overdue</div></div>
+  </div>
+
+  <div class="row-2">
+
+    <div class="card">
+      <h3>Weekly harvest (lb)</h3>
+      <div class="bars">
+        <div class="bar" data-val="3.2k" style="height:82%"></div>
+        <div class="bar" data-val="3.4k" style="height:87%"></div>
+        <div class="bar" data-val="3.6k" style="height:92%"></div>
+        <div class="bar" data-val="3.8k" style="height:97%"></div>
+        <div class="bar dip" data-val="2.3k" style="height:58%"></div>
+        <div class="bar" data-val="3.0k" style="height:76%"></div>
+        <div class="bar" data-val="3.5k" style="height:89%"></div>
+        <div class="bar" data-val="3.9k" style="height:100%"></div>
+      </div>
+      <div class="bars-axis"><span>W12</span><span>W19 incident</span><span>W19</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Revenue by crop (May, $18.3k)</h3>
+      <div class="donut-trio">
+        <div class="donut-tile">
+          <svg class="donut" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--border)" stroke-width="3.5"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c1)" stroke-width="3.5" stroke-dasharray="5 95"  stroke-dashoffset="25"  transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c2)" stroke-width="3.5" stroke-dasharray="13 87" stroke-dashoffset="20"  transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c3)" stroke-width="3.5" stroke-dasharray="35 65" stroke-dashoffset="7"   transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c4)" stroke-width="3.5" stroke-dasharray="42 58" stroke-dashoffset="-28" transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c5)" stroke-width="3.5" stroke-dasharray="5 95"  stroke-dashoffset="-70" transform="rotate(-90 18 18)"></circle>
+          </svg>
+          <div class="donut-cap"><span class="donut-month">March</span><span class="donut-amt">$14.2k</span></div>
+        </div>
+        <div class="donut-tile">
+          <svg class="donut" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--border)" stroke-width="3.5"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c1)" stroke-width="3.5" stroke-dasharray="22 78" stroke-dashoffset="25"  transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c2)" stroke-width="3.5" stroke-dasharray="27 73" stroke-dashoffset="3"   transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c3)" stroke-width="3.5" stroke-dasharray="31 69" stroke-dashoffset="-24" transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c4)" stroke-width="3.5" stroke-dasharray="16 84" stroke-dashoffset="-55" transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c5)" stroke-width="3.5" stroke-dasharray="4 96"  stroke-dashoffset="-71" transform="rotate(-90 18 18)"></circle>
+          </svg>
+          <div class="donut-cap"><span class="donut-month">April</span><span class="donut-amt">$16.7k</span></div>
+        </div>
+        <div class="donut-tile is-focus">
+          <svg class="donut" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--border)" stroke-width="3.5"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c1)" stroke-width="3.5" stroke-dasharray="38 62" stroke-dashoffset="25"  transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c2)" stroke-width="3.5" stroke-dasharray="25 75" stroke-dashoffset="-13" transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c3)" stroke-width="3.5" stroke-dasharray="21 79" stroke-dashoffset="-38" transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c4)" stroke-width="3.5" stroke-dasharray="12 88" stroke-dashoffset="-59" transform="rotate(-90 18 18)"></circle>
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--c5)" stroke-width="3.5" stroke-dasharray="4 96"  stroke-dashoffset="-71" transform="rotate(-90 18 18)"></circle>
+          </svg>
+          <div class="donut-cap"><span class="donut-month">May</span><span class="donut-amt">$18.3k</span></div>
+        </div>
+      </div>
+      <div class="legend-flat">
+        <div class="legend-row"><span class="legend-swatch" style="background:var(--c1)"></span><span class="legend-label">Strawberries</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="background:var(--c2)"></span><span class="legend-label">Heirloom tomatoes</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="background:var(--c3)"></span><span class="legend-label">Salad greens</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="background:var(--c4)"></span><span class="legend-label">Rainbow carrots</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="background:var(--c5)"></span><span class="legend-label">Garlic scapes</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row-2">
+
+    <div class="card">
+      <h3>SOPs · this week</h3>
+      <div class="list">
+        <div class="list-item">
+          <span class="list-dot neg"></span>
+          <div class="list-main">
+            <div class="list-title">CSA pack — flow + box mix</div>
+            <div class="list-meta">overdue 2 days · owner: Maya</div>
+          </div>
+          <span class="list-badge neg">Overdue</span>
+        </div>
+        <div class="list-item">
+          <span class="list-dot warn"></span>
+          <div class="list-main">
+            <div class="list-title">Strawberry harvest cadence</div>
+            <div class="list-meta">due Fri · owner: Jordan</div>
+          </div>
+          <span class="list-badge warn">Due</span>
+        </div>
+        <div class="list-item">
+          <span class="list-dot warn"></span>
+          <div class="list-main">
+            <div class="list-title">Irrigation pump cold-start</div>
+            <div class="list-meta">due Fri · post-incident review</div>
+          </div>
+          <span class="list-badge warn">Due</span>
+        </div>
+        <div class="list-item">
+          <span class="list-dot"></span>
+          <div class="list-main">
+            <div class="list-title">Market float reconciliation</div>
+            <div class="list-meta">on track · weekly</div>
+          </div>
+          <span class="list-badge">On track</span>
+        </div>
+        <div class="list-item">
+          <span class="list-dot"></span>
+          <div class="list-main">
+            <div class="list-title">Volunteer onboarding packet</div>
+            <div class="list-meta">refreshed Tue</div>
+          </div>
+          <span class="list-badge">Done</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Recent incidents</h3>
+      <div class="list">
+        <div class="list-item">
+          <span class="list-dot neg"></span>
+          <div class="list-main">
+            <div class="list-title">Irrigation pump failure — Field 3</div>
+            <div class="list-meta">2026-05-12 · 1.1k lb loss · post-mortem due</div>
+          </div>
+          <span class="list-badge neg">S2</span>
+        </div>
+        <div class="list-item">
+          <span class="list-dot warn"></span>
+          <div class="list-main">
+            <div class="list-title">Cold-chain breach — Tue pickup</div>
+            <div class="list-meta">2026-05-07 · 4 boxes re-packed · refunded</div>
+          </div>
+          <span class="list-badge warn">S3</span>
+        </div>
+        <div class="list-item">
+          <span class="list-dot"></span>
+          <div class="list-main">
+            <div class="list-title">Tractor noise complaint — neighbor</div>
+            <div class="list-meta">2026-05-04 · scheduled before 7am only</div>
+          </div>
+          <span class="list-badge">Closed</span>
+        </div>
+        <div class="list-item">
+          <span class="list-dot"></span>
+          <div class="list-main">
+            <div class="list-title">Blight watch — north tomatoes</div>
+            <div class="list-meta">2026-04-29 · scouting weekly · clean</div>
+          </div>
+          <span class="list-badge">Monitoring</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="page-footer">
+    <span>Sunfield Farm — Hollow Creek, IL.  Data pulled from CSA orders, market reconciliation, and scale logs every 5 min.</span>
+    <span>2026 season · v0.4</span>
+  </footer>
+
+</div>
+</body>
+</html>
