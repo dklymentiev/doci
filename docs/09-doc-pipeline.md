@@ -117,10 +117,10 @@ DOCI documents itself **in DOCI** wherever possible:
 |---|---|---|
 | `docs/0N-*.md` | yes (canonical) | yes (operators can mount `docs/` into `files/docs/` for in-product reading) |
 | Demo / landing / tour (`files/`) | yes (seeded into image) | yes (this is the product surface) |
-| Internal worklogs / decisions | not in OSS repo | yes — author uses DOCI instance at klymentiev.com |
+| Internal worklogs / decisions | not in OSS repo | yes — kept on a private DOCI instance |
 | Incident post-mortems | yes (`incidents/`) | yes — registered as `key_documents` with domain `incidents` |
 
-The internal DOCI at klymentiev.com is the production reference
+The author's private DOCI instance is the production reference
 implementation — features prove themselves there before being
 extracted into OSS. See [`01-vision.md`](01-vision.md) "Audience" for
 why this matters.

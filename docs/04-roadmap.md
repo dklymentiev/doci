@@ -4,8 +4,8 @@ Phases are sized in whole sessions, not dates. A phase is done when its exit cri
 
 ## Phase 1 — Internal prototype  [DONE pre-2026-05-22]
 
-**Goal:** working document workspace behind a private VPN at
-klymentiev.com, used daily by the author and a small set of agents.
+**Goal:** working document workspace behind a private VPN, used daily
+by the author and a small set of agents.
 
 **Deliverables**
 - [x] PHP + Postgres + git working tree

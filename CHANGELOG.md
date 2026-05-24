@@ -13,7 +13,7 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the page header (right of the GUID), and a **Canonical only** toggle
   at the top of the sidebar that collapses the tree to just those
   documents. Canonical files render bold + underlined; folders that
-  contain a canonical descendant render bold (planner #1937).
+  contain a canonical descendant render bold.
 - `migrations/002_key_documents.sql` — `key_documents` table + indexes.
 - `migrations/003_hierarchy_full_chain.sql` — rewrite
   `get_document_hierarchy()` to walk both thread→version and
