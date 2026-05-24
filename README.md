@@ -12,7 +12,9 @@ That's the whole pitch.
 [![PHP 8.2+](https://img.shields.io/badge/php-8.2%2B-blue.svg)](https://www.php.net/)
 [![PostgreSQL 14+](https://img.shields.io/badge/postgres-14%2B-blue.svg)](https://www.postgresql.org/)
 
-**Status:** v0.1.0 — first open-source release. See [CHANGELOG.md](CHANGELOG.md).
+**Status:** v0.2.0-rc — canonical-documents feature + full doc canon +
+the security hardening pass from the rein pre-release audit. See
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Pick DOCI if you
 
