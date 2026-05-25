@@ -884,7 +884,14 @@
                 })
             })
             .then(function(res) { return res.json(); })
-            .then(function(result) {
+            .then(function(envelope) {
+                // Standard envelope from v0.2: {success, data: {valid,
+                // reason, markdownFragment, isBlock?}, request_id}.
+                // Unwrap to the legacy shape the rest of the code expects.
+                var result = (envelope && envelope.data) ? envelope.data
+                    : { valid: false, reason: envelope && envelope.error
+                        ? envelope.error : 'Validation failed',
+                        markdownFragment: '' };
                 window.validationResult = result;
                 if (window.threadContext) {
                     window.threadContext.isBlock = result.isBlock || false;

@@ -3,8 +3,10 @@
  * Validate if selected text can become a thread link
  *
  * POST /api/validate-selection.php
- * Body: {documentGuid, selectedText, contextBefore, contextAfter}
- * Returns: {valid, reason, markdownFragment}
+ * Body:    {documentGuid, selectedText, occurrenceIndex?}
+ * Returns: {success, data: {valid, reason, markdownFragment}, request_id}
+ *          (errors use the standard {success: false, error, request_id}
+ *          envelope shared with every other endpoint.)
  */
 
 require_once __DIR__ . '/../config.php';
@@ -15,11 +17,11 @@ header('Content-Type: application/json');
 // Require authentication
 $auth = require_api_auth();
 
+require_once __DIR__ . '/../lib/response.php';
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     doci_log('validate.error', ['error' => 'Method not allowed'], 'ERROR');
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
+    json_method_not_allowed(['POST']);
 }
 
 try {
@@ -111,25 +113,14 @@ try {
         'isBlock' => $result['isBlock'] ?? false,
     ]);
 
-    echo json_encode($result);
+    // Standard success envelope. Validate-specific payload lives under
+    // `data` so generic clients can rely on the shared {success,
+    // request_id} top level.
+    json_success([
+        'data' => $result,
+        'request_id' => bin2hex(random_bytes(4)),
+    ]);
 
 } catch (Exception $e) {
-    // Validate-selection has a non-standard response shape; scrub the
-    // reason in production but keep the {valid, reason, markdownFragment}
-    // schema intact so the client still parses it.
-    $requestId = bin2hex(random_bytes(4));
-    doci_log('validate.exception', [
-        'request_id' => $requestId,
-        'class' => get_class($e),
-        'message' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-    ], 'ERROR');
-    http_response_code(400);
-    $isDev = strtolower((string) getenv('DOCI_ENV')) === 'development';
-    echo json_encode([
-        'valid' => false,
-        'reason' => $isDev ? $e->getMessage() : 'Internal error (request_id ' . $requestId . ')',
-        'markdownFragment' => ''
-    ]);
+    json_exception($e, 400, 'validate.exception');
 }
