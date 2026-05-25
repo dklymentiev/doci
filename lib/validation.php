@@ -26,8 +26,15 @@ function sanitize_path(string $path): string {
     $sanitized = [];
 
     foreach ($segments as $segment) {
-        // Skip empty, current dir, and parent dir references
+        // Skip empty, current dir, and parent dir references.
         if ($segment === '' || $segment === '.' || $segment === '..') {
+            continue;
+        }
+        // Reject any segment that starts with a dot. files/.git,
+        // files/.data, files/.ai-pending.json and similar dot-prefixed
+        // paths are runtime/internal state -- never targets the
+        // request layer should be able to address.
+        if ($segment[0] === '.') {
             continue;
         }
         // Only allow safe characters

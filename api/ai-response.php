@@ -48,8 +48,21 @@ try {
         throw new Exception('Thread not found');
     }
 
-    // Check for context files (initial or reply)
-    $threadDir = dirname(dirname(__DIR__) . '/files/' . $thread['path']);
+    // Check for context files (initial or reply).
+    //
+    // Boundary check: the database guarantees thread paths come from
+    // sanitize_path(), but enforce the realpath() invariant at the
+    // filesystem read too. If $thread['path'] ever leaks a value
+    // that resolves outside files/, refuse the read and log a WARN
+    // (the same security-event class as auth.* / csrf.*).
+    require_once __DIR__ . '/../lib/validation.php';
+    $filesRoot = dirname(__DIR__) . '/files';
+    $threadDir = dirname($filesRoot . '/' . $thread['path']);
+    if (!validate_path_within($threadDir, $filesRoot)) {
+        error_log('[DOCI] WARN ai-response.path_escape thread_guid=' . $threadGuid
+            . ' path=' . $thread['path']);
+        throw new Exception('Invalid thread path');
+    }
     $initialContextPath = $threadDir . '/.ai-pending.json';
     $replyContextPath = $threadDir . '/.ai-reply-pending.json';
 
