@@ -83,14 +83,19 @@ function syncDocumentToMesh(string $relativePath, string $content, ?int $fileTim
 
     $payload = json_encode($data, JSON_UNESCAPED_UNICODE);
 
+    // Hard cap: 2s total, 1s connect. Mesh sync sits in the write
+    // path of every document create/update; an unresponsive Mesh
+    // would otherwise tax every API caller by 10s+. Real fix is
+    // async decoupling (post-release roadmap); this cap keeps a
+    // degraded Mesh from cascading into degraded DOCI.
     $ch = curl_init(MESH_API_URL . '/doc/' . $guid);
     curl_setopt_array($ch, [
         CURLOPT_CUSTOMREQUEST => 'PUT',
         CURLOPT_POSTFIELDS => $payload,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 2,
+        CURLOPT_CONNECTTIMEOUT => 1,
     ]);
 
     $response = curl_exec($ch);
@@ -139,14 +144,17 @@ function searchMesh(string $query, int $limit = 20, ?string $folder = null): arr
         'tags' => $tags,
     ]);
 
+    // Search is user-initiated (not in write path); slightly longer
+    // cap is acceptable but still bounded so a slow Mesh doesn't
+    // hold an HTTP worker indefinitely.
     $ch = curl_init(MESH_API_URL . '/search');
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => $payload,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_CONNECTTIMEOUT => 1,
     ]);
 
     $response = curl_exec($ch);
