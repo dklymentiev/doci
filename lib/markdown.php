@@ -649,7 +649,7 @@ function rewrite_links_to_guids(string $html): string {
         return $html;
     }
     foreach ($matches[1] as $href) {
-        if ($href === '' || $href[0] !== '/') continue;
+        if ($href[0] !== '/') continue;
         if (preg_match('#^/(assets|api|files/\.data)/#', $href)) continue;
         $pathPart = $href;
         if (($pos = strpos($pathPart, '#')) !== false) $pathPart = substr($pathPart, 0, $pos);
@@ -681,7 +681,7 @@ function rewrite_links_to_guids(string $html): string {
         '#(<a\b[^>]*?href=")([^"]+)(")#',
         function ($m) use ($map) {
             $href = $m[2];
-            if ($href === '' || $href[0] !== '/') return $m[0];
+            if ($href[0] !== '/') return $m[0];
             if (preg_match('#^/(assets|api|files/\.data)/#', $href)) return $m[0];
             // Split path | query | fragment
             $path = $href; $tail = '';

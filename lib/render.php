@@ -450,7 +450,7 @@ function render_page(string $title, string $content, string $path, bool $showRec
     window.__DOCI = {
         rawMarkdown: <?= json_encode($rawContent ?? '', JSON_UNESCAPED_UNICODE) ?>,
         currentPath: <?= json_encode($path, JSON_UNESCAPED_UNICODE) ?>,
-        editPath: <?= json_encode($editPath ?? '', JSON_UNESCAPED_UNICODE) ?>,
+        editPath: <?= json_encode($editPath, JSON_UNESCAPED_UNICODE) ?>,
         documentGuid: <?= json_encode($documentGuid ?? '', JSON_UNESCAPED_UNICODE) ?>,
         ai: { enabled: <?= $aiEnabled ? 'true' : 'false' ?>, models: <?= json_encode($aiModels) ?> }
     };
@@ -567,7 +567,7 @@ function render_file_tree(string $basePath, string $urlPath = '', string $curren
         } catch (Throwable $e) {}
     }
     foreach ($files as $name => $data) {
-        $mdPath = $data['mdPath'] ?? '';
+        $mdPath = $data['mdPath'];
         // Prefer the document's own title; fall back to the raw filename
         // (NOT humanized — humanization mangles dates like 2026-05-12).
         $dbTitle = $pathInfo[$mdPath]['title'] ?? null;
@@ -779,7 +779,7 @@ function render_file_cards(string $basePath, bool $wrapInContainer = true, strin
     }
 
     foreach ($files as $file) {
-        $fileType = $file['type'] ?? 'md';
+        $fileType = $file['type'];
         $fileExt = $fileType === 'html' ? '.html' : '.md';
 
         $html .= '<a href="/' . htmlspecialchars($file['path']) . '.html" class="folder-card file-card file-card-no-icon">' . "\n";

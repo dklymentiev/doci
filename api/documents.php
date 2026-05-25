@@ -357,8 +357,10 @@ function handleUpdate($pdo) {
         $params['summary'] = $summary;
     }
     if ($tags !== null) {
+        // $tags is always array at this point: validate_tags() was called
+        // in handleUpdate() and always returns an array.
         $updates[] = 'tags = :tags';
-        $params['tags'] = is_array($tags) ? '{' . implode(',', $tags) . '}' : $tags;
+        $params['tags'] = '{' . implode(',', $tags) . '}';
     }
 
     $updates[] = 'updated_at = NOW()';

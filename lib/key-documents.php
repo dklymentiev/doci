@@ -111,8 +111,12 @@ function list_key_documents(?string $domain = null): array {
  * @return array{id:int} | array{error:string}
  */
 function add_key_document(array $data): array {
-    $guid = $data['guid'] ?? '';
-    $domain = trim($data['domain'] ?? '');
+    // guid + domain are typed as required in the phpdoc and the API
+    // controller validates them before calling. Empty-string defaults
+    // would mask a contract violation; let the regex/empty checks
+    // below report the bad payload directly.
+    $guid = $data['guid'];
+    $domain = trim($data['domain']);
     if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $guid)) {
         return ['error' => 'invalid guid'];
     }

@@ -106,7 +106,10 @@ function register_document(string $path, array $data): ?string {
 
     // Normalize tags: accept array or comma-separated string
     if (isset($data['tags']) && is_string($data['tags'])) {
-        $data['tags'] = array_values(array_filter(array_map('trim', explode(',', $data['tags'])), 'strlen'));
+        $data['tags'] = array_values(array_filter(
+            array_map('trim', explode(',', $data['tags'])),
+            fn(string $t): bool => $t !== ''
+        ));
     }
 
     // Check if document exists

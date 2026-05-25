@@ -129,11 +129,13 @@ function git_commit_and_push(string $path, string $message, string $author): arr
         // Log the commit
         doci_log('git.commit', ['hash' => $hash, 'author' => $author, 'path' => $path]);
 
-        // Push to origin (async, log result to file)
-        $pushLogFile = DOCI_LOG_FILE ?? '/var/log/doci/app.log';
+        // Push to origin (async, log result to file). DOCI_LOG_FILE is
+        // always defined by config.php at startup and constrained to an
+        // allowlist of safe directories (see config.php DOCI_LOG_FILE
+        // preflight); escapeshellarg() below is the per-call shield.
         $pushCmd = sprintf(
             '(git push origin main 2>&1 || echo "[DOCI] git push FAILED") >> %s &',
-            escapeshellarg($pushLogFile)
+            escapeshellarg(DOCI_LOG_FILE)
         );
         exec($pushCmd);
 

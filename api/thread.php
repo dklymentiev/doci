@@ -174,6 +174,7 @@ try {
             // token-by-token so markdown markers between tokens are absorbed.
             $markdownQuote = $quote; // fallback to browser text
             $versionFilePath = __DIR__ . '/../files/' . $versionPath;
+            $versionContent = '';
             $pos = false;
             $matchLength = strlen($quote);
             $occurrenceIndex = (int) ($input['occurrenceIndex'] ?? 0);

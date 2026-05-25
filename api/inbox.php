@@ -227,7 +227,6 @@ function promoteItem($pdo) {
         }
         if (!mkdir($targetDir, 0750, true)) {
             json_server_error('Failed to create directory');
-            return;
         }
     }
 
@@ -235,7 +234,6 @@ function promoteItem($pdo) {
     if (file_exists($oldPath)) {
         if (!rename($oldPath, $newPath)) {
             json_server_error('Failed to move file');
-            return;
         }
     }
 

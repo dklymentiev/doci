@@ -110,7 +110,6 @@ try {
     doci_log('validate.result', [
         'valid' => $result['valid'],
         'reason' => $result['reason'] ?? null,
-        'isBlock' => $result['isBlock'] ?? false,
     ]);
 
     // Standard success envelope. Validate-specific payload lives under
