@@ -29,9 +29,10 @@ services:
       - DOCI_DEV_AUTO_AUTH=${DOCI_DEV_AUTO_AUTH:-false}
       # Trusted reverse-proxy source IPs / CIDRs (comma-separated).
       # Remote-User header is honoured only from these sources;
-      # everything else has it stripped. Empty = no proxy trusted
-      # (API-key auth only).
-      - DOCI_TRUSTED_PROXIES=${DOCI_TRUSTED_PROXIES:-}
+      # everything else has it stripped. Default = "none" sentinel
+      # = explicit API-key-only mode. Empty/0.0.0.0/0 in production
+      # is a fatal startup error -- operators MUST decide deliberately.
+      - DOCI_TRUSTED_PROXIES=${DOCI_TRUSTED_PROXIES:-none}
       # CSRF enforcement on browser-flow POST/PUT/DELETE. On by
       # default; disable only for API-key-only deployments.
       - DOCI_CSRF_ENABLED=${DOCI_CSRF_ENABLED:-true}

@@ -7,7 +7,7 @@
  */
 
 // Set timezone
-date_default_timezone_set(getenv('TZ') ?: 'America/Chicago');
+date_default_timezone_set(getenv('TZ') ?: 'UTC');
 
 // Database configuration from environment variables
 define('DB_HOST', getenv('DB_HOST') ?: 'common-postgres');
