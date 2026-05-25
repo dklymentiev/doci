@@ -143,9 +143,16 @@ function getInboxItem($pdo) {
         return;
     }
 
-    // Read file content
+    // Read file content. The DB column is sanitised on insert, but
+    // enforce the realpath() invariant here so any future DB-side bug
+    // (manual UPDATE, migration glitch, etc.) cannot escape FILES_PATH.
     $filepath = FILES_PATH . '/' . $item['path'];
     if (file_exists($filepath)) {
+        if (!validate_path_within($filepath, FILES_PATH)) {
+            doci_log('inbox.path_escape', ['guid' => $guid, 'path' => $item['path']], 'WARN');
+            json_error('Invalid item path');
+            return;
+        }
         $item['content'] = file_get_contents($filepath);
     }
 
@@ -203,10 +210,22 @@ function promoteItem($pdo) {
         return;
     }
 
-    // Create target directory
+    // Create target directory. 0750 (group-readable, world-denied) is
+    // strict enough for the www-data + container-operator pair without
+    // exposing future user content to other system accounts.
     $targetDir = dirname($newPath);
     if (!is_dir($targetDir)) {
-        if (!mkdir($targetDir, 0755, true)) {
+        // Re-validate the directory itself before creating it. $newPath
+        // was already checked above, but validate_path_within on the
+        // dirname catches the rare case where dirname() walks back
+        // into a symlinked parent.
+        if (!validate_path_within($targetDir, FILES_PATH)
+            && $targetDir !== rtrim(FILES_PATH, '/')) {
+            doci_log('inbox.mkdir_path_escape', ['target' => $targetDir], 'WARN');
+            json_error('Invalid target path');
+            return;
+        }
+        if (!mkdir($targetDir, 0750, true)) {
             json_server_error('Failed to create directory');
             return;
         }
