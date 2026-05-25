@@ -11,7 +11,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/src/config.php';
 require_once __DIR__ . '/lib/git.php';
 require_once __DIR__ . '/lib/validation.php';
 require_once __DIR__ . '/lib/response.php';
@@ -64,7 +64,7 @@ if (!str_ends_with($path, '.md')) {
 }
 
 // Check file exists
-$localPath = __DIR__ . '/files/' . $path;
+$localPath = FILES_PATH . '/' . $path;
 if (!file_exists($localPath)) {
     doci_log('save.error', ['error' => 'File not found', 'path' => $path], 'ERROR');
     json_not_found('File not found');

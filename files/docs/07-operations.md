@@ -232,7 +232,7 @@ the app container restarts.
 
 ```bash
 docker exec doci php -r '
-  require "/var/www/html/config.php";
+  require "/var/www/html/src/config.php";
   $r = get_db()->query("SELECT table_name FROM information_schema.tables
                          WHERE table_schema='\''public'\''")->fetchAll(PDO::FETCH_COLUMN);
   print_r($r);

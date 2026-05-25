@@ -70,7 +70,7 @@ echo "[doci-entrypoint] Waiting for database to accept connections..."
 DB_WAIT_TIMEOUT="${DOCI_DB_WAIT_TIMEOUT:-60}"
 i=0
 until php -r '
-    require_once "/var/www/html/config.php";
+    require_once "/var/www/html/src/config.php";
     try { get_db()->query("SELECT 1"); exit(0); }
     catch (Throwable $e) { exit(1); }
 ' >/dev/null 2>&1; do
@@ -89,7 +89,7 @@ if [ -d /var/www/html/migrations ]; then
         [ -f "$m" ] || continue
         echo "[doci-entrypoint]   -> $(basename "$m")"
         php -r '
-            require_once "/var/www/html/config.php";
+            require_once "/var/www/html/src/config.php";
             $pdo = get_db();
             $sql = file_get_contents($argv[1]);
             try {

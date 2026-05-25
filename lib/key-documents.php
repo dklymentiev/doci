@@ -6,7 +6,7 @@
  * scattering inline PDO + SELECT around the controllers.
  */
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../src/config.php';
 
 /**
  * Has this document been marked key in at least one domain?

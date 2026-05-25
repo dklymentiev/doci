@@ -17,7 +17,7 @@ if (php_sapi_name() !== 'cli') {
     exit(1);
 }
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../src/config.php';
 require_once __DIR__ . '/../lib/markdown.php';
 
 $filesDir = realpath(__DIR__ . '/../files');

@@ -7,7 +7,7 @@
  * - API Key (X-API-Key header)
  */
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../src/config.php';
 require_once __DIR__ . '/../lib/validation.php';
 require_once __DIR__ . '/../lib/response.php';
 

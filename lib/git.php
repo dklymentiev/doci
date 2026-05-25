@@ -5,7 +5,7 @@
  * Secure git commit and push operations with author validation.
  */
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../src/config.php';
 
 // Git configuration. The content repo is /var/www/html/files (initialised
 // by docker-entrypoint.sh on first start). All operations are relative to

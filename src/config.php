@@ -25,11 +25,12 @@ if (empty(DB_PASS)) {
     }
 }
 
-// Application root directory (for lib/ files that need to reference files/)
-define('DOCI_ROOT', __DIR__);
+// Application root directory (for lib/ files that need to reference files/).
+// config.php lives in src/, so the project root is dirname(__DIR__).
+define('DOCI_ROOT', dirname(__DIR__));
 
-// Files path
-define('FILES_PATH', getenv('FILES_PATH') ?: __DIR__ . '/files');
+// Files path. Resolved relative to project root, not src/.
+define('FILES_PATH', getenv('FILES_PATH') ?: DOCI_ROOT . '/files');
 
 // AI Gateway configuration
 // AI provider URL (OpenAI-compatible /chat/completions endpoint).
@@ -580,8 +581,9 @@ function validate_api_auth(): array {
                 'method' => 'api-key'
             ];
         }
-        // File-based key (deprecated - use DOCI_API_KEY_HASH env var instead)
-        $keyFile = __DIR__ . '/.api-key-hash';
+        // File-based key (deprecated - use DOCI_API_KEY_HASH env var instead).
+        // Lives at the project root, not src/.
+        $keyFile = DOCI_ROOT . '/.api-key-hash';
         if (file_exists($keyFile)) {
             $storedKeyHash = trim(file_get_contents($keyFile));
             if ($storedKeyHash !== '' && doci_verify_api_key($apiKey, $storedKeyHash)) {

@@ -14,8 +14,8 @@
  * Authentication: Traefik/Authum (Remote-User header) OR API key (X-API-Key header)
  */
 
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../documents.php';
+require_once __DIR__ . '/../src/config.php';
+require_once __DIR__ . '/../src/documents.php';
 require_once __DIR__ . '/../lib/git.php';
 require_once __DIR__ . '/../lib/validation.php';
 require_once __DIR__ . '/../lib/response.php';

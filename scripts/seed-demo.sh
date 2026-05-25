@@ -17,7 +17,7 @@ DEV_USER="${DEV_USER:-dev}"
 # Helper: look up GUID by exact path. Echo empty if not found.
 guid_for() {
     php -r "
-require '/var/www/html/config.php';
+require '/var/www/html/src/config.php';
 \$r = get_db()->prepare('SELECT guid FROM documents WHERE path = ? AND deleted_at IS NULL');
 \$r->execute([\$argv[1]]);
 \$row = \$r->fetch();
@@ -28,7 +28,7 @@ echo \$row ? \$row['guid'] : '';
 # Helper: count versions for an original document GUID.
 version_count() {
     php -r "
-require '/var/www/html/config.php';
+require '/var/www/html/src/config.php';
 \$r = get_db()->prepare('SELECT COUNT(*) FROM documents WHERE original_guid = ? AND doc_type = ? AND deleted_at IS NULL');
 \$r->execute([\$argv[1], 'version']);
 echo \$r->fetchColumn();

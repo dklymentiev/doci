@@ -6,7 +6,7 @@
  */
 
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/lib/validation.php';
+require_once dirname(__DIR__) . '/lib/validation.php';
 
 /**
  * Get document by GUID
@@ -258,7 +258,7 @@ function create_version(string $originalGuid, string $createdBy): ?array {
     }
 
     $db = get_db();
-    $filesDir = __DIR__ . '/files';
+    $filesDir = FILES_PATH;
 
     // Read original document content
     $originalPath = $filesDir . '/' . $original['path'];

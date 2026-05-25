@@ -7,7 +7,7 @@
  */
 
 // Load configuration and require authentication
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/src/config.php';
 
 // Load shared libraries
 require_once __DIR__ . '/lib/validation.php';
@@ -21,7 +21,7 @@ require_once __DIR__ . '/lib/vendor/Parsedown.php';
 require_once __DIR__ . '/lib/vendor/ParsedownExtended.php';
 
 // Load document functions for GUID routing
-require_once __DIR__ . '/documents.php';
+require_once __DIR__ . '/src/documents.php';
 
 // Load render and markdown functions
 require_once __DIR__ . '/lib/markdown.php';

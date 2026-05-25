@@ -9,7 +9,7 @@
  *          envelope shared with every other endpoint.)
  */
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../src/config.php';
 require_once __DIR__ . '/../lib/markdown.php';
 
 header('Content-Type: application/json');

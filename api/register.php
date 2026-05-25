@@ -15,8 +15,8 @@
  * (e.g., from scriber, imports, or other tools).
  */
 
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../documents.php';
+require_once __DIR__ . '/../src/config.php';
+require_once __DIR__ . '/../src/documents.php';
 
 header('Content-Type: application/json');
 

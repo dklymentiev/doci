@@ -4,7 +4,7 @@
  * Serves video files from the protected /files directory
  */
 
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/src/config.php';
 
 // Require authentication
 require_authentication();

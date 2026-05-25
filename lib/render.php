@@ -440,7 +440,7 @@ function render_page(string $title, string $content, string $path, bool $showRec
         // to hide AI controls (the thread modal's "Use AI" checkbox and
         // its model chips) when the operator has not configured a
         // provider, instead of letting users tick a checkbox that fails.
-        require_once __DIR__ . '/../ai.php';
+        require_once __DIR__ . '/../src/ai.php';
         $aiEnabled = ai_is_configured();
         $aiModels = [];
         foreach (['haiku', 'sonnet', 'opus'] as $alias) {

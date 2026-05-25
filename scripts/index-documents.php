@@ -9,7 +9,7 @@
  * 2. Files (doc_type = 'document') with parent_guid pointing to folder
  */
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../src/config.php';
 
 // Only allow CLI
 if (php_sapi_name() !== 'cli') {

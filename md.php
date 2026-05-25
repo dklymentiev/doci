@@ -4,7 +4,7 @@
  * Serves raw markdown content for JavaScript fetch requests
  */
 
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/src/config.php';
 
 // Require authentication
 require_authentication();

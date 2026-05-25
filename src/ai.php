@@ -151,7 +151,7 @@ function get_document_content(string $guid): ?string {
         return null;
     }
 
-    $filePath = __DIR__ . '/files/' . $document['path'];
+    $filePath = dirname(__DIR__) . '/files/' . $document['path'];
     if (!file_exists($filePath)) {
         return null;
     }
@@ -402,7 +402,7 @@ function append_ai_response_to_thread(string $threadGuid, string $content, strin
         return false;
     }
 
-    $filePath = __DIR__ . '/files/' . $thread['path'];
+    $filePath = dirname(__DIR__) . '/files/' . $thread['path'];
     if (!file_exists($filePath)) {
         return false;
     }
@@ -441,7 +441,7 @@ function append_ai_error_to_thread(string $threadGuid, string $error): bool {
         return false;
     }
 
-    $filePath = __DIR__ . '/files/' . $thread['path'];
+    $filePath = dirname(__DIR__) . '/files/' . $thread['path'];
     if (!file_exists($filePath)) {
         return false;
     }

@@ -18,7 +18,7 @@ $healthy = true;
 
 // Check database connection
 try {
-    require_once __DIR__ . '/../config.php';
+    require_once __DIR__ . '/../src/config.php';
     $pdo = get_db();
     $pdo->query('SELECT 1');
     $status['checks']['database'] = 'ok';

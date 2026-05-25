@@ -11,9 +11,9 @@
  * This allows multiple users to create threads on overlapping text selections.
  */
 
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../documents.php';
-require_once __DIR__ . '/../ai.php';
+require_once __DIR__ . '/../src/config.php';
+require_once __DIR__ . '/../src/documents.php';
+require_once __DIR__ . '/../src/ai.php';
 require_once __DIR__ . '/../lib/markdown.php';
 
 header('Content-Type: application/json');
