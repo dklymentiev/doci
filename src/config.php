@@ -211,7 +211,7 @@ if ($previousUser !== $_SESSION['myusername'] && $_SESSION['myusername'] !== 'un
 // id, putting CSRF prefixes and SIDs into every prod log line on
 // every POST request. defined() guard because doci_log() lives
 // below this block.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && defined('DOCI_LOG_LEVEL')) {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && defined('DOCI_LOG_LEVEL')) {
     doci_log('csrf.preflight', [
         'has_request_token' => isset($_SERVER['HTTP_X_CSRF_TOKEN']) || isset($_POST['csrf_token']),
         'has_session_token' => !empty($_SESSION['csrf_token']),
