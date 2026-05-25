@@ -78,6 +78,17 @@ try {
         throw new Exception('No pending AI request for this thread');
     }
 
+    // Final validate_path_within() check on the full file path before
+    // the read. $threadDir was already validated above, but enforce
+    // the invariant on $contextPath itself so a symlinked
+    // .ai-pending.json file inside the dir still cannot escape
+    // (defense in depth).
+    if (!validate_path_within($contextPath, $filesRoot)) {
+        error_log('[DOCI] WARN ai-response.context_path_escape thread_guid='
+            . $threadGuid . ' path=' . $contextPath);
+        throw new Exception('Invalid AI context path');
+    }
+
     $context = json_decode(file_get_contents($contextPath), true);
     if (!$context) {
         throw new Exception('Invalid AI context file');
