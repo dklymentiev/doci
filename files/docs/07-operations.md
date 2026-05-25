@@ -141,7 +141,7 @@ escalate to a full incident.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DB_HOST` | yes | `common-postgres` | Postgres host |
+| `DB_HOST` | yes | `postgres` | Postgres host (matches the production compose service name) |
 | `DB_PORT` | no | `5432` | Postgres port |
 | `DB_NAME` | no | `doci` | Database name |
 | `DB_USER` | no | `doci_app` | DB user |

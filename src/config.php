@@ -10,7 +10,9 @@
 date_default_timezone_set(getenv('TZ') ?: 'UTC');
 
 // Database configuration from environment variables
-define('DB_HOST', getenv('DB_HOST') ?: 'common-postgres');
+// Default 'postgres' matches the service name in docker-compose.yml's
+// production stack. Override via DB_HOST env for any other deployment.
+define('DB_HOST', getenv('DB_HOST') ?: 'postgres');
 define('DB_PORT', getenv('DB_PORT') ?: '5432');
 define('DB_NAME', getenv('DB_NAME') ?: 'doci');
 define('DB_USER', getenv('DB_USER') ?: 'doci_app');
