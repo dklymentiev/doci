@@ -58,6 +58,32 @@ function get_db(): PDO {
     return $pdo;
 }
 
+// ========================================================================
+// HTTP SECURITY HEADERS
+// ========================================================================
+//
+// .htaccess (mod_headers) already emits these for Apache. Repeating
+// them here is intentional defense-in-depth: if the container is run
+// behind a different webserver, or .htaccess is overridden, or
+// AllowOverride is misconfigured, the PHP layer still attaches the
+// hardening headers. header() with replace=true means duplicate emission
+// is a no-op (last write wins with the same value).
+if (!headers_sent()) {
+    header("Content-Security-Policy: default-src 'self'; "
+        . "script-src 'self' 'unsafe-inline'; "
+        . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        . "font-src 'self' https://fonts.gstatic.com; "
+        . "img-src 'self' data: https:; "
+        . "connect-src 'self'");
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    // HSTS only over HTTPS, so we don't break local-dev http://.
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+
 // Secure session configuration
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_set_cookie_params([
