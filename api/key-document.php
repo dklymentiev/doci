@@ -75,7 +75,5 @@ try {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
 } catch (Throwable $e) {
-    doci_log('key_document.error', ['error' => $e->getMessage()], 'ERROR');
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    json_exception($e, 500, 'key_document.error');
 }

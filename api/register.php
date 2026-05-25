@@ -123,10 +123,5 @@ try {
     ]);
 
 } catch (Exception $e) {
-    doci_log('register.exception', ['error' => $e->getMessage()], 'ERROR');
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ]);
+    json_exception($e, 400, 'register.exception');
 }

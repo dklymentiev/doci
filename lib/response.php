@@ -92,3 +92,61 @@ function json_method_not_allowed(array $allowed = ['GET', 'POST']): never {
 function json_server_error(string $message = 'Internal server error'): never {
     json_error_exit($message, 500);
 }
+
+/**
+ * Send an exception as a JSON error response.
+ *
+ * Always logs the full exception (class + message + file:line + trace)
+ * to doci_log() at ERROR with a request_id correlator. The response
+ * body shape depends on DOCI_ENV:
+ *
+ *   production (default): {success: false, error: "Internal error",
+ *                          request_id: "<8 hex>"}
+ *     -- DB schema, table names, file paths, and any other exception
+ *        text never reach the client.
+ *
+ *   development:         {success: false, error: "<full message>",
+ *                          request_id: "<8 hex>", debug: {...}}
+ *     -- full detail in the response for fast iteration.
+ *
+ * Status code defaults to 500. Pass 400/404/etc. for known
+ * client errors; the exception is still logged but the client
+ * sees the supplied code.
+ */
+function json_exception(\Throwable $e, int $code = 500, string $action = 'api.exception'): void {
+    $requestId = bin2hex(random_bytes(4));
+
+    doci_log($action, [
+        'request_id' => $requestId,
+        'class' => get_class($e),
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'uri' => $_SERVER['REQUEST_URI'] ?? null,
+        'method' => $_SERVER['REQUEST_METHOD'] ?? null,
+        'trace' => $e->getTraceAsString(),
+    ], 'ERROR');
+
+    http_response_code($code);
+    header('Content-Type: application/json');
+
+    $isDev = strtolower((string) getenv('DOCI_ENV')) === 'development';
+    if ($isDev) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'request_id' => $requestId,
+            'debug' => [
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Internal error',
+            'request_id' => $requestId,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+}

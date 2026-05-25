@@ -61,8 +61,7 @@ try {
     }
 
 } catch (Exception $e) {
-    doci_log('documents.api.error', ['error' => $e->getMessage()], 'ERROR');
-    json_error($e->getMessage());
+    json_exception($e, 400, 'documents.api.error');
 }
 
 /**

@@ -114,11 +114,22 @@ try {
     echo json_encode($result);
 
 } catch (Exception $e) {
-    doci_log('validate.exception', ['error' => $e->getMessage()], 'ERROR');
+    // Validate-selection has a non-standard response shape; scrub the
+    // reason in production but keep the {valid, reason, markdownFragment}
+    // schema intact so the client still parses it.
+    $requestId = bin2hex(random_bytes(4));
+    doci_log('validate.exception', [
+        'request_id' => $requestId,
+        'class' => get_class($e),
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+    ], 'ERROR');
     http_response_code(400);
+    $isDev = strtolower((string) getenv('DOCI_ENV')) === 'development';
     echo json_encode([
         'valid' => false,
-        'reason' => $e->getMessage(),
+        'reason' => $isDev ? $e->getMessage() : 'Internal error (request_id ' . $requestId . ')',
         'markdownFragment' => ''
     ]);
 }
