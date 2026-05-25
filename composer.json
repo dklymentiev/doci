@@ -22,16 +22,16 @@
     },
     "autoload": {
         "files": [
-            "config.php",
+            "src/config.php",
             "lib/git.php",
             "lib/validation.php",
             "lib/response.php",
-            "documents.php"
+            "src/documents.php"
         ]
     },
     "scripts": {
         "test": "phpunit",
-        "analyse": "phpstan analyse lib/ api/ --level=5"
+        "analyse": "phpstan analyse src/ lib/ api/ --level=5"
     },
     "config": {
         "sort-packages": true

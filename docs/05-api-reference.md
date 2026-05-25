@@ -38,9 +38,10 @@ set `DOCI_CSRF_ENABLED=false` only for API-key-only deployments.)
 | `/api/validate-selection.php` | POST | required | Verify a text selection can become a thread anchor |
 | `/api/health.php` | GET | none | Liveness probe (DB + files writability) |
 
-Total **10 public routes**. UI routes (`/`, `/<guid>`, `/<path>`,
-`/save.php`, `/md.php`, `/video.php`) render HTML and are out of scope
-here — they are exercised by clicking, not by integrating.
+Total **10 public routes**. UI routes (`/`, `/<guid>`, `/<path>`)
+render HTML and are out of scope here — they are exercised by clicking,
+not by integrating. `/api/save.php` is the browser-flow save endpoint
+the editor uses; `/md.php` and `/video.php` are gone in v0.2.
 
 ## Documents
 

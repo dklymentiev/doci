@@ -24,7 +24,7 @@ fi
 
 # Bind-mounted files from the host arrive owned by the host user (often
 # root inside the container), which leaves www-data unable to write.
-# DOCI writes through Apache (thread wraps on live docs, save.php edits,
+# DOCI writes through Apache (thread wraps on live docs, api/save.php edits,
 # git commits), so the whole tree has to belong to www-data.
 chown -R www-data:www-data "$FILES_DIR" 2>/dev/null || true
 

@@ -3,7 +3,7 @@
  * DOCI - Save Endpoint
  *
  * Saves markdown file with local git commit + push.
- * POST /save.php
+ * POST /api/save.php
  */
 
 // Log errors but don't display to users
@@ -11,10 +11,10 @@ error_reporting(E_ALL);
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
-require_once __DIR__ . '/src/config.php';
-require_once __DIR__ . '/lib/git.php';
-require_once __DIR__ . '/lib/validation.php';
-require_once __DIR__ . '/lib/response.php';
+require_once __DIR__ . '/../src/config.php';
+require_once __DIR__ . '/../lib/git.php';
+require_once __DIR__ . '/../lib/validation.php';
+require_once __DIR__ . '/../lib/response.php';
 
 // Only accept POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -72,7 +72,7 @@ if (!file_exists($localPath)) {
 
 // Normalise internal path links to GUID URLs before persisting, so
 // links survive future renames and folder moves.
-require_once __DIR__ . '/lib/markdown.php';
+require_once __DIR__ . '/../lib/markdown.php';
 $content = rewrite_md_links_to_guids($content);
 
 // Write file

@@ -585,7 +585,7 @@
             editStatus.className = 'edit-status';
             saveBtn.disabled = true;
 
-            fetch('/save.php', {
+            fetch('/api/save.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 body: JSON.stringify({
