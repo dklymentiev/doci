@@ -61,7 +61,6 @@ jobs:
 
       - name: Run PHPStan
         run: composer analyse
-        continue-on-error: true
 
   lint:
     runs-on: ubuntu-latest
