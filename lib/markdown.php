@@ -65,7 +65,20 @@ function parse_markdown(string $markdown): string {
 
     if (!empty($embeds)) {
         foreach ($embeds as $token => $opts) {
-            $filePath = __DIR__ . '/../files/' . ltrim($opts['path'], '/');
+            // Apply sanitize_path before any filesystem touch so a path
+            // like '../etc/passwd' is rejected before realpath() has a
+            // chance to follow it. realpath() check below stays as the
+            // belt-and-suspenders second layer.
+            require_once __DIR__ . '/validation.php';
+            $safePath = sanitize_path($opts['path']);
+            if ($safePath === '') {
+                $html = str_replace('<p>' . $token . '</p>',
+                    '<div class="doci-embed-error">Invalid embed path</div>', $html);
+                $html = str_replace($token,
+                    '<div class="doci-embed-error">Invalid embed path</div>', $html);
+                continue;
+            }
+            $filePath = __DIR__ . '/../files/' . $safePath;
             if (file_exists($filePath) && is_file($filePath)) {
                 $real = realpath($filePath);
                 $filesRoot = realpath(__DIR__ . '/../files');
@@ -231,10 +244,49 @@ function render_html_inline(string $html): string {
         $body = preg_replace('#<title[^>]*>[\s\S]*?</title>#i', '', $body);
     }
 
+    // 3. XSS sanitisation. Inline embed renders into the page's own
+    //    DOM, so any <script>, on* attribute, or javascript:/data:
+    //    URI from the embed source executes with full origin
+    //    privileges. Strip them. The 4-line allowlist preserves the
+    //    intended use case (SVG charts, prerendered HTML widgets) and
+    //    closes the stored-XSS vector raised by the audit.
+    $body = doci_sanitize_inline_html($body);
+
     return '<div class="doci-html-inline">'
         . ($styles !== '' ? '<style>' . $styles . '</style>' : '')
         . $body
         . '</div>';
+}
+
+/**
+ * Strip the four script-bearing affordances from an HTML fragment:
+ * <script> tags, on* event-handler attributes, javascript:/vbscript:/
+ * data:text/html URIs in href/src, and inline <iframe>s. Everything
+ * else (SVGs, tables, divs, styles already scoped above) passes.
+ *
+ * Not a full sanitiser -- callers must use it only on content that
+ * has already been bounded by realpath() to files/ (i.e. content the
+ * operator deliberately added to the document tree, not arbitrary
+ * user input). Belt-and-suspenders for the {{embed:}} shortcode.
+ */
+function doci_sanitize_inline_html(string $html): string {
+    // Remove <script>...</script> and self-closing variants.
+    $html = preg_replace('#<script\b[^>]*>[\s\S]*?</script\s*>#i', '', $html);
+    $html = preg_replace('#<script\b[^>]*/?>#i', '', $html);
+    // Strip on* event-handler attributes anywhere in any tag.
+    $html = preg_replace('#\s+on[a-z]+\s*=\s*"[^"]*"#i', '', $html);
+    $html = preg_replace("#\s+on[a-z]+\s*=\s*'[^']*'#i", '', $html);
+    $html = preg_replace('#\s+on[a-z]+\s*=\s*[^\s>]+#i', '', $html);
+    // Neutralise script-bearing URI schemes in href/src/xlink:href.
+    $html = preg_replace(
+        '#(href|src|xlink:href)\s*=\s*(["\']?)\s*(?:javascript|vbscript|data\s*:\s*text/html)\s*:[^"\'\s>]*\2#i',
+        '$1=$2#blocked-uri$2',
+        $html
+    );
+    // Drop iframes -- inline embeds should not nest navigation contexts.
+    $html = preg_replace('#<iframe\b[^>]*>[\s\S]*?</iframe\s*>#i', '', $html);
+    $html = preg_replace('#<iframe\b[^>]*/?>#i', '', $html);
+    return $html;
 }
 
 /**
