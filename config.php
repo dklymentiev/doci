@@ -159,18 +159,36 @@ $_SESSION['userid'] = 1;  // Single-user mode (Authum doesn't provide user ID)
 
 if ($previousUser !== $_SESSION['myusername'] && $_SESSION['myusername'] !== 'unknown') {
     $savedCsrf = $_SESSION['csrf_token'] ?? null;
-    error_log("DOCI SESSION REGEN: prev=$previousUser new={$_SESSION['myusername']} csrf=" . ($savedCsrf ? substr($savedCsrf, 0, 8) . '...' : 'null') . " sid=" . session_id());
+    // Diagnostic log gated on DOCI_LOG_LEVEL=DEBUG. Earlier
+    // versions unconditionally error_log'd a CSRF prefix + the
+    // session id on every auth change, leaking session-correlation
+    // material into production logs on every request.
+    //
+    // This code runs before the LOGGING section below defines
+    // DOCI_LOG_LEVEL / DOCI_LOG_RANK, so guard with defined().
+    if (defined('DOCI_LOG_LEVEL')) {
+        doci_log('auth.session_regen', [
+            'prev' => $previousUser,
+            'new' => $_SESSION['myusername'],
+            'has_csrf' => $savedCsrf !== null,
+        ], 'DEBUG');
+    }
     session_regenerate_id(true);
     if ($savedCsrf) {
         $_SESSION['csrf_token'] = $savedCsrf;
     }
 }
 
-// Debug CSRF state on POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $reqCsrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? 'none';
-    $sesCsrf = $_SESSION['csrf_token'] ?? 'none';
-    error_log("DOCI CSRF CHECK: request=" . substr($reqCsrf, 0, 8) . "... session=" . substr($sesCsrf, 0, 8) . "... user={$_SESSION['myusername']} sid=" . session_id());
+// Debug CSRF state on POST -- gated on DOCI_LOG_LEVEL=DEBUG. Earlier
+// versions unconditionally error_log'd partial tokens and the session
+// id, putting CSRF prefixes and SIDs into every prod log line on
+// every POST request. defined() guard because doci_log() lives
+// below this block.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && defined('DOCI_LOG_LEVEL')) {
+    doci_log('csrf.preflight', [
+        'has_request_token' => isset($_SERVER['HTTP_X_CSRF_TOKEN']) || isset($_POST['csrf_token']),
+        'has_session_token' => !empty($_SESSION['csrf_token']),
+    ], 'DEBUG');
 }
 // Note: Authorization is handled by Authum - all authenticated users have full access
 // For multi-user RBAC, implement user roles in database
