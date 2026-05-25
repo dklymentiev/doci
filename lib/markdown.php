@@ -258,14 +258,29 @@ function rewrite_md_links_to_guids(string $markdown): string {
         return $markdown;
     }
 
+    // Pass 1: scan once to collect every URL that might need normalising.
+    // Then one IN-clause query maps every resolvable path -> GUID in a
+    // single round-trip. Pass 2 substitutes using the cached map and
+    // falls through to per-link path_to_guid_url() only for the rare
+    // edge cases the map misses.
+    $urls = [];
+    if (preg_match_all('/\[([^\]\n]+)\]\(\s*([^)\s]+)(\s+"[^"]*")?\s*\)/', $markdown, $im)) {
+        foreach ($im[2] as $u) { $urls[$u] = true; }
+    }
+    if (preg_match_all('/^(\s{0,3}\[[^\]\n]+\]:\s+)(\S+)/m', $markdown, $rm)) {
+        foreach ($rm[2] as $u) { $urls[$u] = true; }
+    }
+    $cache = $urls ? path_to_guid_url_map(array_keys($urls)) : [];
+
     // Inline: [text](url) or [text](url "title")
     $markdown = preg_replace_callback(
         '/\[([^\]\n]+)\]\(\s*([^)\s]+)(\s+"[^"]*")?\s*\)/',
-        function ($m) {
+        function ($m) use ($cache) {
             // First try to repair if it's a dead GUID URL (post-reseed safety).
+            // This is rare and still per-link -- the common path is the
+            // batched map below.
             $url = repair_dead_guid_link($m[2], $m[1]);
-            // Then forward-normalize path -> GUID.
-            $newUrl = path_to_guid_url($url);
+            $newUrl = $cache[$url] ?? ($url === $m[2] ? ($cache[$url] ?? path_to_guid_url($url)) : path_to_guid_url($url));
             return '[' . $m[1] . '](' . $newUrl . ($m[3] ?? '') . ')';
         },
         $markdown
@@ -275,13 +290,86 @@ function rewrite_md_links_to_guids(string $markdown): string {
     // adjacent display text we can recover from; only forward-normalize.
     $markdown = preg_replace_callback(
         '/^(\s{0,3}\[[^\]\n]+\]:\s+)(\S+)/m',
-        function ($m) {
-            return $m[1] . path_to_guid_url($m[2]);
+        function ($m) use ($cache) {
+            return $m[1] . ($cache[$m[2]] ?? path_to_guid_url($m[2]));
         },
         $markdown
     );
 
     return $markdown;
+}
+
+/**
+ * Batched path -> GUID resolver. Given a list of URL strings, return
+ * a map ['original-url' => '/guid<tail>', ...] for those that resolve
+ * to a live document; URLs that don't resolve are absent from the map
+ * (callers should fall through to leaving them unchanged).
+ *
+ * Internals mirror path_to_guid_url() but issue a single IN-clause
+ * query for every candidate, matching the render-path batching
+ * pattern in rewrite_links_to_guids().
+ *
+ * @param string[] $urls
+ * @return array<string, string>
+ */
+function path_to_guid_url_map(array $urls): array {
+    if (!function_exists('get_db')) {
+        return [];
+    }
+
+    // Normalise each URL into (cleanPath, tail) and the two candidate
+    // documents.path keys (key.md and key/index.md). Carry both
+    // candidates back to the URL so we can pick the right one when
+    // the IN-query returns matches.
+    $candidates = [];
+    $perUrl = [];
+    foreach ($urls as $url) {
+        if ($url === '' || $url[0] !== '/') continue;
+        if (preg_match('#^/(assets|api|files/\.data)/#', $url)) continue;
+        if (preg_match('#^/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(/|$|\?|\#)#', $url)) continue;
+
+        $path = $url; $tail = '';
+        if (($pos = strpos($path, '#')) !== false) { $tail = substr($path, $pos) . $tail; $path = substr($path, 0, $pos); }
+        if (($pos = strpos($path, '?')) !== false) { $tail = substr($path, $pos) . $tail; $path = substr($path, 0, $pos); }
+        $clean = preg_replace('/\.html$/', '', rtrim($path, '/'));
+        $key = ltrim($clean, '/');
+        if ($key === '' || $key === 'index') continue;
+
+        $perUrl[$url] = ['key' => $key, 'tail' => $tail];
+        $candidates[] = $key . '.md';
+        $candidates[] = $key . '/index.md';
+    }
+
+    if (!$candidates) {
+        return [];
+    }
+    $candidates = array_values(array_unique($candidates));
+
+    try {
+        $pdo = get_db();
+        $ph = implode(',', array_fill(0, count($candidates), '?'));
+        $stmt = $pdo->prepare("SELECT path, guid FROM documents WHERE path IN ($ph) AND deleted_at IS NULL");
+        $stmt->execute($candidates);
+        $pathMap = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $pathMap[$row['path']] = $row['guid'];
+        }
+    } catch (Throwable $e) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($perUrl as $url => $meta) {
+        // Prefer exact .md match over folder/index.md, matching
+        // path_to_guid_url() semantics.
+        foreach ([$meta['key'] . '.md', $meta['key'] . '/index.md'] as $cand) {
+            if (isset($pathMap[$cand])) {
+                $out[$url] = '/' . $pathMap[$cand] . $meta['tail'];
+                break;
+            }
+        }
+    }
+    return $out;
 }
 
 /**
