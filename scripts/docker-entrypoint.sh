@@ -57,32 +57,68 @@ fi
 # set by default. Git config files live at /var/www/.config/git/config.
 export HOME=/var/www
 
-# Index any markdown/HTML files that exist on disk but don't yet have a
-# documents-table row -- otherwise the meta bar can't show a stable
-# GUID for seeded content (tour stops, demo-farm, docs). Idempotent;
-# skips files that are already registered.
+# ----------------------------------------------------------------------
+# Schema migrations -- SYNCHRONOUS, before Apache starts.
 #
-# Backgrounded with a brief startup delay so Apache doesn't wait on
-# Postgres for the indexer.
-(
-    sleep 5
-    # Apply pending migrations (idempotent via IF NOT EXISTS).
-    if [ -d /var/www/html/migrations ]; then
-        for m in /var/www/html/migrations/*.sql; do
-            [ -f "$m" ] || continue
-            php -r '
-                require_once "/var/www/html/config.php";
-                $pdo = get_db();
-                $sql = file_get_contents($argv[1]);
-                try { $pdo->exec($sql); } catch (Throwable $e) { fwrite(STDERR, "migration ".basename($argv[1]).": ".$e->getMessage()."\n"); }
-            ' "$m" 2>&1 | grep -v '^$' || true
-        done
+# Previously this block lived inside a `( sleep 5; ... ) &` subshell
+# that raced Apache: requests that landed before the subshell finished
+# applying 001/002/003 hit a half-migrated DB and returned 500. Now
+# migrations are a hard prerequisite to taking traffic.
+# ----------------------------------------------------------------------
+
+echo "[doci-entrypoint] Waiting for database to accept connections..."
+DB_WAIT_TIMEOUT="${DOCI_DB_WAIT_TIMEOUT:-60}"
+i=0
+until php -r '
+    require_once "/var/www/html/config.php";
+    try { get_db()->query("SELECT 1"); exit(0); }
+    catch (Throwable $e) { exit(1); }
+' >/dev/null 2>&1; do
+    i=$((i + 1))
+    if [ "$i" -ge "$DB_WAIT_TIMEOUT" ]; then
+        echo "[doci-entrypoint] FATAL: database unreachable after ${DB_WAIT_TIMEOUT}s" >&2
+        exit 1
     fi
+    sleep 1
+done
+echo "[doci-entrypoint] Database reachable (${i}s)"
+
+if [ -d /var/www/html/migrations ]; then
+    echo "[doci-entrypoint] Applying migrations..."
+    for m in /var/www/html/migrations/*.sql; do
+        [ -f "$m" ] || continue
+        echo "[doci-entrypoint]   -> $(basename "$m")"
+        php -r '
+            require_once "/var/www/html/config.php";
+            $pdo = get_db();
+            $sql = file_get_contents($argv[1]);
+            try {
+                $pdo->exec($sql);
+            } catch (Throwable $e) {
+                fwrite(STDERR, "migration ".basename($argv[1]).": ".$e->getMessage()."\n");
+                exit(1);
+            }
+        ' "$m" || {
+            echo "[doci-entrypoint] FATAL: migration $(basename "$m") failed; refusing to start Apache" >&2
+            exit 1
+        }
+    done
+    echo "[doci-entrypoint] Migrations OK."
+fi
+
+# ----------------------------------------------------------------------
+# Seed tasks -- index, normalise, demo seed.
+#
+# These do NOT block Apache start. They populate / normalise content
+# that's nice-to-have on first boot but is not required for the API to
+# answer correctly. Kept backgrounded so a slow seed never delays
+# readiness.
+# ----------------------------------------------------------------------
+(
+    sleep 2
     if [ -f /var/www/html/scripts/index-documents.php ]; then
         php /var/www/html/scripts/index-documents.php 2>&1 | tail -20 || true
     fi
-    # After indexing every file has a DB row -- rewrite seeded markdown
-    # so internal links become stable GUID links on disk.
     if [ -f /var/www/html/scripts/normalize-links.php ]; then
         php /var/www/html/scripts/normalize-links.php 2>&1 | tail -10 || true
         cd /var/www/html/files
@@ -93,8 +129,6 @@ export HOME=/var/www
         fi
         cd /
     fi
-    # Pre-seed one thread + version on the landing so the version bar
-    # and quote anchor are visible out of the box. Idempotent.
     if [ -f /var/www/html/scripts/seed-demo.sh ]; then
         sh /var/www/html/scripts/seed-demo.sh 2>&1 | tail -5 || true
         cd /var/www/html/files
