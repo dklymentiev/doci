@@ -512,29 +512,28 @@ function generate_short_guid(): string {
 /**
  * Verify a candidate API key against a stored hash.
  *
- * Accepted hash formats:
- *   - bcrypt ($2y$ / $2a$ / $2b$ prefix) -- the v0.2 default; verified
- *     via password_verify(). New keys should use this format
- *     (`php -r "echo password_hash(\$key, PASSWORD_BCRYPT);"`).
- *   - SHA-256 hex (64 chars [0-9a-f]) -- legacy format from v0.1. Still
- *     accepted to avoid breaking existing deployments on upgrade;
- *     emits a deprecation warning on every successful verify so the
- *     operator notices to rotate.
+ * Only bcrypt-formatted hashes are accepted ($2y$ / $2a$ / $2b$
+ * prefix). Anything else -- including the v0.1 SHA-256 hex format --
+ * returns false and logs a fatal-class WARN so the operator sees
+ * the migration is overdue.
  *
- * Anything else returns false.
+ * Migrate a SHA-256 hash with:
+ *   php scripts/hash-api-key.php "<your-existing-secret-key>"
+ *
+ * (You will need to know the original cleartext key. If it's been
+ * lost, generate a fresh one with `php scripts/hash-api-key.php` and
+ * distribute the new key to all clients.)
  */
 function doci_verify_api_key(string $candidateKey, string $storedHash): bool {
     if (preg_match('/^\$2[ayb]\$/', $storedHash)) {
         return password_verify($candidateKey, $storedHash);
     }
     if (preg_match('/^[0-9a-f]{64}$/i', $storedHash)) {
-        $ok = hash_equals(strtolower($storedHash), hash('sha256', $candidateKey));
-        if ($ok) {
-            error_log('[DOCI] WARN auth.api_key_sha256_deprecated '
-                . 'DOCI_API_KEY_HASH is a legacy SHA-256 hash. '
-                . 'Rotate with bcrypt: see scripts/hash-api-key.php');
-        }
-        return $ok;
+        // Legacy v0.1 SHA-256 -- refuse + log fatal. The operator's
+        // first failed request after upgrade tells them what to do.
+        error_log('[DOCI] FATAL auth.api_key_sha256_unsupported '
+            . 'DOCI_API_KEY_HASH is a legacy SHA-256 hash; bcrypt required since v0.2. '
+            . 'Rotate with: php scripts/hash-api-key.php "<your-key>"');
     }
     return false;
 }
