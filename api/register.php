@@ -4,8 +4,12 @@
  *
  * POST /api/register.php - Register a new document in the database
  *
- * Body: {path, title?, created_by?}
+ * Body: {path, title?}
  * Returns: {success, guid, path, title}
+ *
+ * created_by is derived from the authenticated session/API-key
+ * user; any value in the request body is ignored (attribution
+ * cannot be spoofed by API clients).
  *
  * This endpoint should be called when creating new documents
  * (e.g., from scriber, imports, or other tools).
@@ -41,7 +45,8 @@ try {
 
     $path = $input['path'] ?? null;
     $title = $input['title'] ?? null;
-    $createdBy = $input['created_by'] ?? get_current_username() ?? 'system';
+    // Attribution is server-side only. Ignore any created_by in body.
+    $createdBy = get_current_username() ?? 'system';
 
     doci_log('register.start', [
         'path' => $path,
