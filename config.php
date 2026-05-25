@@ -70,22 +70,46 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
+// Trust-boundary preflight. DOCI_TRUSTED_PROXIES must be a deliberate
+// operator decision in production -- empty (= silently accept no proxy)
+// and 0.0.0.0/0 (= trust the world) are both dangerous defaults that
+// shouldn't reach a live request handler. The literal value "none"
+// declares "intentionally API-key-only", which is treated as empty
+// for the trust check but passes the assertion.
+$_doci_env = strtolower((string) getenv('DOCI_ENV'));
+$_doci_trusted_raw = trim((string) getenv('DOCI_TRUSTED_PROXIES'));
+if ($_doci_env === 'production') {
+    if ($_doci_trusted_raw === '') {
+        error_log('[DOCI] FATAL: DOCI_TRUSTED_PROXIES must be set in production. '
+            . 'Use "none" for API-key-only deployments, or a CIDR list.');
+        http_response_code(500);
+        die('Configuration error: DOCI_TRUSTED_PROXIES unset in production');
+    }
+    if (preg_match('#(^|,)\s*0\.0\.0\.0/0\s*(,|$)#', $_doci_trusted_raw)) {
+        error_log('[DOCI] FATAL: DOCI_TRUSTED_PROXIES=0.0.0.0/0 is not allowed in production. '
+            . 'Restrict to specific reverse-proxy CIDRs or use "none".');
+        http_response_code(500);
+        die('Configuration error: wildcard DOCI_TRUSTED_PROXIES in production');
+    }
+}
+$_doci_trusted_effective = ($_doci_trusted_raw === 'none') ? '' : $_doci_trusted_raw;
+
 // Get user info from reverse-proxy ForwardAuth header.
 //
 // The Remote-User header is trusted ONLY if the request originated
 // from an IP that the operator explicitly allowlisted via
 // DOCI_TRUSTED_PROXIES (comma-separated list of IPs and/or CIDR
-// ranges, IPv4). Default = empty = trust no one. Without an
-// explicit allowlist, any Remote-User header is stripped before
-// reaching the handler -- this prevents direct-to-container clients
-// (anyone on traefik-net or with the published port) from forging
-// the header and authenticating as anyone.
+// ranges, IPv4). The literal "none" explicitly declares no proxy
+// trust (API-key only). Without an explicit allowlist, any
+// Remote-User header is stripped before reaching the handler --
+// this prevents direct-to-container clients (anyone on traefik-net
+// or with the published port) from forging the header and
+// authenticating as anyone.
 $remoteUser = null;
 $rawRemoteUser = $_SERVER['HTTP_REMOTE_USER'] ?? null;
 if ($rawRemoteUser !== null) {
     $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
-    $trusted = (string) getenv('DOCI_TRUSTED_PROXIES');
-    if (doci_is_trusted_proxy($remoteAddr, $trusted)) {
+    if (doci_is_trusted_proxy($remoteAddr, $_doci_trusted_effective)) {
         // Source IP is trusted; validate header format
         // (alphanumeric, underscore, hyphen only).
         if (preg_match('/^[a-zA-Z0-9_-]+$/', $rawRemoteUser)) {
