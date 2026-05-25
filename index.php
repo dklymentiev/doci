@@ -16,9 +16,9 @@ require_once __DIR__ . '/lib/git.php';
 // Require authentication before any content is served
 require_authentication();
 
-// Load Parsedown markdown parser
-require_once __DIR__ . '/Parsedown.php';
-require_once __DIR__ . '/ParsedownExtended.php';
+// Load Parsedown markdown parser (vendored, see lib/vendor/)
+require_once __DIR__ . '/lib/vendor/Parsedown.php';
+require_once __DIR__ . '/lib/vendor/ParsedownExtended.php';
 
 // Load document functions for GUID routing
 require_once __DIR__ . '/documents.php';
