@@ -18,12 +18,12 @@ services:
       - DB_NAME=doci
       - DB_USER=doci_app
       - DB_PASS=doci_dev_pass
-      # API-key auth for service-to-service / CLI / MCP. The hash below
-      # is sha256("dev-test-key-not-for-production") -- intentionally
-      # weak and documented; `tests/api-test.sh` uses this key.
-      # Browser sessions still auto-auth as "dev" via the
-      # DOCI_ENV/DOCI_DEV_AUTO_AUTH pair below.
-      - DOCI_API_KEY_HASH=40bff53c1af2966b6fcdacc3b8e09fff8aa4f596256ec237e17e2dbde5042462
+      # API-key auth for service-to-service / CLI / MCP. The bcrypt
+      # hash below verifies the key "dev-test-key-not-for-production"
+      # -- intentionally weak and documented; `tests/api-test.sh`
+      # uses this key. Browser sessions still auto-auth as "dev"
+      # via the DOCI_ENV/DOCI_DEV_AUTO_AUTH pair below.
+      - DOCI_API_KEY_HASH=$2y$10$73ReJHdHL.5POdiQwDCsxOJTe/HvsVGmP5BumyYxuN0bs5LsHzC/a
       # === AI gateway (OpenAI-compatible /v1/chat/completions) ===
       # Leave AI_GATEWAY_URL empty to disable AI replies entirely.
       # When set, point it at any OpenAI-compatible provider, e.g.:

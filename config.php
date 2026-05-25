@@ -466,6 +466,37 @@ function generate_short_guid(): string {
 // ========================================================================
 
 /**
+ * Verify a candidate API key against a stored hash.
+ *
+ * Accepted hash formats:
+ *   - bcrypt ($2y$ / $2a$ / $2b$ prefix) -- the v0.2 default; verified
+ *     via password_verify(). New keys should use this format
+ *     (`php -r "echo password_hash(\$key, PASSWORD_BCRYPT);"`).
+ *   - SHA-256 hex (64 chars [0-9a-f]) -- legacy format from v0.1. Still
+ *     accepted to avoid breaking existing deployments on upgrade;
+ *     emits a deprecation warning on every successful verify so the
+ *     operator notices to rotate.
+ *
+ * Anything else returns false.
+ */
+function doci_verify_api_key(string $candidateKey, string $storedHash): bool {
+    if (preg_match('/^\$2[ayb]\$/', $storedHash)) {
+        return password_verify($candidateKey, $storedHash);
+    }
+    if (preg_match('/^[0-9a-f]{64}$/i', $storedHash)) {
+        $ok = hash_equals(strtolower($storedHash), hash('sha256', $candidateKey));
+        if ($ok) {
+            error_log('[DOCI] WARN auth.api_key_sha256_deprecated '
+                . 'DOCI_API_KEY_HASH is a legacy SHA-256 hash. '
+                . 'Rotate with bcrypt: see scripts/hash-api-key.php');
+        }
+        return $ok;
+    }
+    return false;
+}
+
+
+/**
  * Validate API request authentication
  * Supports: Remote-User header (from Traefik/Authum) OR API key
  *
@@ -485,8 +516,8 @@ function validate_api_auth(): array {
     // Method 2: API Key header
     $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? null;
     if ($apiKey !== null) {
-        $storedKeyHash = getenv('DOCI_API_KEY_HASH');
-        if ($storedKeyHash && hash_equals($storedKeyHash, hash('sha256', $apiKey))) {
+        $storedKeyHash = (string) getenv('DOCI_API_KEY_HASH');
+        if ($storedKeyHash !== '' && doci_verify_api_key($apiKey, $storedKeyHash)) {
             return [
                 'authenticated' => true,
                 'user' => 'api-key',
@@ -494,11 +525,10 @@ function validate_api_auth(): array {
             ];
         }
         // File-based key (deprecated - use DOCI_API_KEY_HASH env var instead)
-        // File should contain SHA-256 hash of the key, not plain text
         $keyFile = __DIR__ . '/.api-key-hash';
         if (file_exists($keyFile)) {
             $storedKeyHash = trim(file_get_contents($keyFile));
-            if ($storedKeyHash && hash_equals($storedKeyHash, hash('sha256', $apiKey))) {
+            if ($storedKeyHash !== '' && doci_verify_api_key($apiKey, $storedKeyHash)) {
                 doci_log('auth.api_key_file_deprecated', [], 'WARN');
                 return [
                     'authenticated' => true,
