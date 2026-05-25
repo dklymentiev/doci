@@ -288,6 +288,19 @@ unset($_doci_log_raw);
 
 define('DOCI_LOG_FILE', getenv('DOCI_LOG_FILE') ?: '/var/log/doci/app.log');
 
+// Restrict DOCI_LOG_FILE to vetted directories so a hostile env-var
+// value cannot redirect the log (and thereby the shell-exec'd
+// `git push >> <log>` line in lib/git.php) at a writable path with
+// embedded shell metacharacters. escapeshellarg() in the git push
+// call already neutralises the metacharacter vector; this is the
+// defense-in-depth assertion the audit asked for.
+if (!preg_match('#^(/var/log/|/tmp/|/dev/stderr$|/dev/null$|/var/www/html/files/\.data/)#', DOCI_LOG_FILE)) {
+    error_log('[DOCI] FATAL: DOCI_LOG_FILE must be under /var/log/, /tmp/, '
+        . '/var/www/html/files/.data/, or be /dev/stderr|/dev/null. Got: ' . DOCI_LOG_FILE);
+    http_response_code(500);
+    die('Configuration error: DOCI_LOG_FILE outside allowed directories');
+}
+
 /**
  * Returns true for security-relevant actions that must always reach
  * the log regardless of DOCI_LOG_LEVEL: authentication events, CSRF
