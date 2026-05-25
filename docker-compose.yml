@@ -38,6 +38,7 @@ services:
       # Log threshold (ERROR|WARN|INFO|DEBUG). Security-relevant
       # actions log regardless of this level.
       - DOCI_LOG_LEVEL=${DOCI_LOG_LEVEL:-WARN}
+      - DOCI_LOG_FILE=${DOCI_LOG_FILE:-/var/log/doci/app.log}
       # Domain for git commits
       - DOCI_DOMAIN=${DOCI_DOMAIN:-doci.example.com}
       # Application URLs
@@ -45,7 +46,7 @@ services:
       - AUTH_URL=${AUTH_URL:-https://auth.example.com}
       - EXTERNAL_SCRIPTS_URL=${EXTERNAL_SCRIPTS_URL:-}
       # Timezone
-      - TZ=${TZ:-America/Chicago}
+      - TZ=${TZ:-UTC}
     volumes:
       - ./files:/var/www/html/files
       - ./.git:/var/www/html/.git:ro

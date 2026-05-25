@@ -11,8 +11,7 @@ contract, see [`05-api-reference.md`](05-api-reference.md).
 ## 1. Boot the dev stack
 
 ```bash
-git clone <repository-url>   # see README — the canonical remote moves to
-                             # github.com/dklymentiev/doci once Phase 6 ships
+git clone https://github.com/dklymentiev/doci.git
 cd doci
 docker compose -f docker-compose.dev.yml up -d
 ```

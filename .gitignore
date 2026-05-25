@@ -1,6 +1,7 @@
 # Environment files (contain secrets)
 .env
 .env.*
+!.env.example
 .api-key
 .api-key-hash
 .doci-api-key

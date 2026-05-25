@@ -33,7 +33,7 @@ the security hardening pass from the rein pre-release audit. See
 ## 60-second start
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/dklymentiev/doci.git
 cd doci
 docker compose -f docker-compose.dev.yml up -d
 # UI: http://localhost:8080
