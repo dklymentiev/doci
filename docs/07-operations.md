@@ -13,7 +13,7 @@ Single-host docker compose. Two compose files are shipped:
 | File | Use | Postgres |
 |------|-----|----------|
 | `docker-compose.dev.yml` | Local trial, integration tests | Embedded `postgres:16-alpine` on host port 5433 |
-| `docker-compose.yml` | Production | **External** — expects a `postgres` container reachable on the `traefik-net` network |
+| `docker-compose.yml` | Production | **External** — expects a `postgres` container reachable on the `web` network (rename to your proxy network) |
 
 Container layout in production:
 
@@ -54,9 +54,11 @@ Pre-flight, once per host:
 
 - [ ] Docker 24+ and docker compose v2 installed.
 - [ ] An external Postgres 14+ reachable on a docker network named
-  `traefik-net`. DB `doci`, user `doci_app`, password set.
-- [ ] Traefik (or another reverse proxy) on the same `traefik-net`,
-  configured to issue TLS for `DOCI_DOMAIN`.
+  `web` (or rename the `web` network in `docker-compose.yml` to
+  match your proxy's existing network). DB `doci`, user `doci_app`,
+  password set.
+- [ ] Traefik (or another reverse proxy) on the same `web`
+  network, configured to issue TLS for `DOCI_DOMAIN`.
 - [ ] A forward-auth middleware (e.g. Authum) that sets
   `Remote-User` for authenticated browser requests. API-key callers
   bypass this.

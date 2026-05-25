@@ -59,10 +59,16 @@ services:
       - "traefik.http.routers.doci.tls=true"
       - "traefik.http.services.doci.loadbalancer.server.port=80"
     networks:
-      - traefik-net
+      - web
 
 networks:
-  traefik-net:
+  # External network shared with your reverse proxy (Traefik,
+  # nginx-proxy, Caddy, …). Create it once on the host:
+  #
+  #   docker network create web
+  #
+  # Rename to whatever your existing proxy network is called.
+  web:
     external: true
 
 volumes:
