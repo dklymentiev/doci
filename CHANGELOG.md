@@ -6,6 +6,17 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Auth: accept email-format principals in the ForwardAuth `Remote-User`
+  header. The validation regex was `^[a-zA-Z0-9_-]+$`, which rejected any
+  username containing `@` or `.` -- i.e. every email identity from a
+  ForwardAuth proxy. Trusted-proxy callers were silently dropped to
+  `unknown` and returned `api.auth_failed`, so read endpoints (e.g.
+  `list.php`) returned empty for those users. Widened to
+  `^[a-zA-Z0-9_@.+-]+$` at both check sites (`src/config.php`: raw header
+  and revalidation). Still bounded (no spaces/slashes/shell metacharacters)
+  and honoured only from allowlisted proxy IPs.
+
 ## [0.2.0-rc] - 2026-05-24
 
 This release closes the eight critical blockers raised by the rein

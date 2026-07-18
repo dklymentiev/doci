@@ -141,7 +141,7 @@ if ($rawRemoteUser !== null) {
     if (doci_is_trusted_proxy($remoteAddr, $_doci_trusted_effective)) {
         // Source IP is trusted; validate header format
         // (alphanumeric, underscore, hyphen only).
-        if (preg_match('/^[a-zA-Z0-9_-]+$/', $rawRemoteUser)) {
+        if (preg_match('/^[a-zA-Z0-9_@.+-]+$/', $rawRemoteUser)) {
             $remoteUser = $rawRemoteUser;
         } else {
             // Trusted source but malformed header value -- log + drop.
@@ -564,7 +564,7 @@ function doci_verify_api_key(string $candidateKey, string $storedHash): bool {
 function validate_api_auth(): array {
     // Method 1: Remote-User header (from Traefik ForwardAuth)
     $remoteUser = $_SERVER['HTTP_REMOTE_USER'] ?? null;
-    if ($remoteUser !== null && preg_match('/^[a-zA-Z0-9_-]+$/', $remoteUser)) {
+    if ($remoteUser !== null && preg_match('/^[a-zA-Z0-9_@.+-]+$/', $remoteUser)) {
         return [
             'authenticated' => true,
             'user' => $remoteUser,
