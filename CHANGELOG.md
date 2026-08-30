@@ -6,6 +6,19 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-30
+
+### Added
+- `GET /api/list.php` -- list live documents, for a caller building a tree.
+  Supports `?q=` (case-insensitive match on path or title) and `?recent=N`
+  (the N most recently updated, newest first). Office has called this
+  endpoint since its Documents section shipped and DOCI never carried the
+  file, so that page rendered "No documents yet" against a full store on
+  every node from the day it was added. The failure read as emptiness
+  rather than as an error, which is why it survived unnoticed.
+
+## [0.3.1] - 2026-07-18
+
 ### Fixed
 - Auth: accept email-format principals in the ForwardAuth `Remote-User`
   header. The validation regex was `^[a-zA-Z0-9_-]+$`, which rejected any
