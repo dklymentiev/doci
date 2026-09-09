@@ -1,0 +1,34 @@
+# Smart Node Documents companion -- MCP sidecar image.
+# Wraps DOCI's mcp_server.py (FastMCP) as a Docker service on the
+# smart-node network. Transport: SSE on DOCI_MCP_PORT (default 8200).
+#
+# Built by CI in the DOCI repository; shipped as
+# smart-node-doci-mcp-<version>.tar.gz in the installer bundle.
+#
+# Usage (via docker compose in documents.sh):
+#   DOCI_API_URL  -- URL of the DOCI PHP container (e.g. http://smart-node-doci/api)
+#   DOCI_API_KEY  -- API key matching the PHP container's DOCI_API_KEY_HASH
+#   DOCI_MCP_HOST -- bind address (0.0.0.0 inside the container)
+#   DOCI_MCP_PORT -- SSE listen port (default 8200)
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies first (layer cache).
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the MCP server source.
+COPY mcp_server.py ./
+
+ENV DOCI_MCP_HOST=0.0.0.0
+ENV DOCI_MCP_PORT=8200
+
+EXPOSE 8200
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://localhost:${DOCI_MCP_PORT:-8200}/health',timeout=3)" \
+    || exit 1
+
+CMD ["python", "mcp_server.py", "--transport", "sse"]

@@ -6,6 +6,12 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `Dockerfile.mcp`, the image definition for the MCP sidecar. `mcp_server.py`
+  and `requirements.txt` have always lived here; the Dockerfile that turns them
+  into an image did not, so the one thing needed to build the sidecar was kept
+  somewhere else. Brought in from the Smart Node vendored copy.
+
 ### Fixed
 - API: an HTTP status set by a handler survives the outer exception catch.
   Every endpoint wrapped its body in `catch (Exception)` and answered a flat
