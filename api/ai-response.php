@@ -140,5 +140,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    json_exception($e, 400, 'ai-response.error');
+    $code = http_response_code();
+    json_exception($e, ($code >= 400 ? $code : 400), 'ai-response.error');
 }

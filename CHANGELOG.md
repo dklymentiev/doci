@@ -6,6 +6,15 @@ and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- API: an HTTP status set by a handler survives the outer exception catch.
+  Every endpoint wrapped its body in `catch (Exception)` and answered a flat
+  400, so a handler that had already called `http_response_code(404)` and then
+  thrown reported the wrong status to the caller. The catch now keeps a status
+  the handler set when it is itself an error code, and still answers 400 for a
+  genuinely unexpected exception. Affects ai-response, documents, register,
+  thread, thread-reply and validate-selection.
+
 ## [0.3.2] - 2026-08-30
 
 ### Added

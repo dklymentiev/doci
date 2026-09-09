@@ -121,5 +121,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    json_exception($e, 400, 'validate.exception');
+    $code = http_response_code();
+    json_exception($e, ($code >= 400 ? $code : 400), 'validate.exception');
 }
